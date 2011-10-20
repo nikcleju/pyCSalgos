@@ -67,7 +67,10 @@ vector
     n_active = 0
     indices = range(X.shape[1]) # keeping track of swapping
 
-    max_features = X.shape[1] if tol is not None else n_nonzero_coefs
+    #max_features = X.shape[1] if tol is not None else n_nonzero_coefs
+    # Nic: tol not None should not overide n_nonzero_coefs, but act together
+    max_features = n_nonzero_coefs
+    
     L = np.empty((max_features, max_features), dtype=X.dtype)
     L[0, 0] = 1.
 
@@ -97,7 +100,9 @@ vector
         residual = y - np.dot(X[:, :n_active], gamma)
         if tol is not None and nrm2(residual) ** 2 <= tol:
             break
-        elif n_active == max_features:
+        #elif n_active == max_features:
+        # Nic: tol not None should not overide n_nonzero_coefs, but act together
+        if n_active == max_features:
             break
 
     return gamma, indices[:n_active]
@@ -229,6 +234,8 @@ default) this value is set to 10% of n_features.
 
 tol: float
 Maximum norm of the residual. If not None, overrides n_nonzero_coefs.
+
+Nic: tol does not oveeride n_nonzero_coefs, the wto conditions act jointly!
 
 precompute_gram: {True, False, 'auto'},
 Whether to perform precomputations. Improves performance when n_targets
