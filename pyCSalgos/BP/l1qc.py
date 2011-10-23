@@ -200,7 +200,7 @@ def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol,
     #---------------------
     # Original Matab code:
     
-    ## check if the matrix A is implicit or explicit
+    ## check if the mix A is implicit or explicit
     #largescale = isa(A,'function_handle');
     #
     ## line search parameters
@@ -330,8 +330,8 @@ def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol,
         
     fu1 = x - u
     fu2 = -x - u
-    fe = 1/2*(np.vdot(r,r) - epsilon**2)
-    f = u.sum() - (1/tau)*(np.log(-fu1).sum() + np.log(-fu2).sum() + math.log(-fe))
+    fe = 1.0/2*(np.vdot(r,r) - epsilon**2)
+    f = u.sum() - (1.0/tau)*(np.log(-fu1).sum() + np.log(-fu2).sum() + math.log(-fe))
     
     niter = 0
     done = 0
@@ -363,7 +363,7 @@ def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol,
         #h11pfun = @(z) sigx.*z - (1/fe)*At(A(z)) + 1/fe^2*(atr'*z)*atr;
         h11pfun = lambda z: sigx*z - (1.0/fe)*At(A(z)) + 1.0/(fe**2)*np.dot(np.dot(atr.T,z),atr)
         dx,cgres,cgiter = cgsolve(h11pfun, w1p, cgtol, cgmaxiter, 0)
-        if (cgres > 1/2):
+        if (cgres > 1.0/2):
           print 'Cannot solve system.  Returning previous iterate.  (See Section 4 of notes for more information.)'
           xp = x.copy()
           up = u.copy()
@@ -372,7 +372,8 @@ def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol,
         Adx = A(dx)
       else:
         #H11p = diag(sigx) - (1/fe)*AtA + (1/fe)^2*atr*atr';
-        H11p = np.diag(sigx) - (1/fe)*AtA + (1/fe)**2*np.dot(atr,atr.T)
+        # Attention: atr is column vector, so atr*atr' means outer(atr,atr)
+        H11p = np.diag(sigx) - (1.0/fe)*AtA + (1.0/fe)**2*np.outer(atr,atr)
         #opts.POSDEF = true; opts.SYM = true;
         #[dx,hcond] = linsolve(H11p, w1p, opts);
         #if (hcond < 1e-14)
@@ -382,7 +383,8 @@ def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol,
         #end
         try:
             dx = scipy.linalg.solve(H11p, w1p, sym_pos=True)
-            hcond = 1.0/scipy.linalg.cond(H11p)
+            #dx = np.linalg.solve(H11p, w1p)
+            hcond = 1.0/np.linalg.cond(H11p)
         except scipy.linalg.LinAlgError:
             print 'Matrix ill-conditioned.  Returning previous iterate.  (See Section 4 of notes for more information.)'
             xp = x.copy()
@@ -412,9 +414,9 @@ def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol,
       #  -fu1(ifu1)./(dx(ifu1)-du(ifu1)); -fu2(ifu2)./(-dx(ifu2)-du(ifu2)); ...
       #  (-bqe+sqrt(bqe^2-4*aqe*cqe))/(2*aqe)
       #  ]));
-      smax = min(1,np.concatenate((-fu1[ifu1]/(dx[ifu1]-du[ifu1]) , -fu2[ifu2]/(-dx[ifu2]-du[ifu2]) , (-bqe + math.sqrt(bqe**2-4*aqe*cqe))/(2*aqe)),0).min())
-        
-      s = (0.99)*smax
+      smax = min(1,np.concatenate( (-fu1[ifu1]/(dx[ifu1]-du[ifu1]) , -fu2[ifu2]/(-dx[ifu2]-du[ifu2]) , np.array([ (-bqe + math.sqrt(bqe**2-4*aqe*cqe))/(2*aqe) ]) ) , 0).min())
+      
+      s = 0.99 * smax
       
       # backtracking line search
       suffdec = 0
@@ -427,9 +429,9 @@ def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol,
         #fu1p = xp - up;  fu2p = -xp - up;  fep = 1/2*(rp'*rp - epsilon^2);
         fu1p = xp - up
         fu2p = -xp - up
-        fep = 0.5*(np.vdot(r,r) - epsilon**2)
+        fep = 0.5*(np.vdot(rp,rp) - epsilon**2)
         #fp = sum(up) - (1/tau)*(sum(log(-fu1p)) + sum(log(-fu2p)) + log(-fep));
-        fp = up.sum() - (1.0/tau)*(np.log(-fu1p).sum() + np.log(-fu2p).sum() + log(-fep))
+        fp = up.sum() - (1.0/tau)*(np.log(-fu1p).sum() + np.log(-fu2p).sum() + math.log(-fep))
         #flin = f + alpha*s*(gradf'*[dx; du]);
         flin = f + alpha*s*np.dot(gradf.T , np.concatenate((dx,du),0))
         #suffdec = (fp <= flin);
@@ -460,7 +462,7 @@ def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol,
       f = fp
       
       #lambda2 = -(gradf'*[dx; du]);
-      lambda2 = -np.dot(gradf , np.concatenate((dx,du),0))
+      lambda2 = -np.dot(gradf.T , np.concatenate((dx,du),0))
       #stepsize = s*norm([dx; du]);
       stepsize = s * np.linalg.norm(np.concatenate((dx,du),0))
       niter = niter + 1
@@ -623,7 +625,7 @@ def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxi
     newtonmaxiter = 50
     
     #N = length(x0);
-    N = x0.size()
+    N = x0.size
     
     # starting point --- make sure that it is feasible
     if largescale:
@@ -633,7 +635,7 @@ def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxi
         AAt = lambda z: A(At(z))
         # TODO: implement cgsolve
         w,cgres,cgiter = cgsolve(AAt, b, cgtol, cgmaxiter, 0)
-        if (cgres > 1/2):
+        if (cgres > 1.0/2):
           print 'A*At is ill-conditioned: cannot find starting point'
           xp = x0.copy()
           return xp
@@ -652,6 +654,7 @@ def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxi
         #end
         try:
             w = scipy.linalg.solve(np.dot(A,A.T), b, sym_pos=True)
+            #w = np.linalg.solve(np.dot(A,A.T), b)
             hcond = 1.0/scipy.linalg.cond(np.dot(A,A.T))
         except scipy.linalg.LinAlgError:
             print 'A*At is ill-conditioned: cannot find starting point'
@@ -673,7 +676,7 @@ def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxi
     
     # choose initial value of tau so that the duality gap after the first
     # step will be about the origial norm
-    tau = max(((2*N+1)/np.abs(x0).sum()), 1)
+    tau = max(((2*N+1.0)/np.abs(x0).sum()), 1)
                                                                                                                               
     lbiter = math.ceil((math.log(2*N+1)-math.log(lbtol)-math.log(tau))/math.log(mu))
     #disp(sprintf('Number of log barrier iterations = #d\n', lbiter));
