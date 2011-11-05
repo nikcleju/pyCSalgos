@@ -135,7 +135,7 @@ while sigma>sigma_min
         if norm(A*dir) >= eps
             s = s - (1-eps/norm(A*dir)) * dir;
         end
-        assert(abs(norm(x - A*s) - eps) < 1e-4*eps)
+        assert(norm(x - A*s) < eps + 1e-6)
     end
     
     if ShowProgress
