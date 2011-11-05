@@ -58,6 +58,8 @@ class RecomTSTresults(unittest.TestCase):
 
   
 if __name__ == "__main__":
-    unittest.main(verbosity=2)    
+    #import cProfile
+    #cProfile.run('unittest.main()', 'profres')
+    unittest.main()    
     #suite = unittest.TestLoader().loadTestsFromTestCase(CompareResults)
     #unittest.TextTestRunner(verbosity=2).run(suite)    
