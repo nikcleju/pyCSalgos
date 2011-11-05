@@ -113,11 +113,7 @@ end
 % Initialization
 %s = A\x;
 s = A_pinv*x;
-% Nic:
-s = zeros(size(A,2),1);
-s = randn(size(A,2),1);
-sigma = 10;
-%sigma = 2*max(abs(s));
+sigma = 2*max(abs(s));
 
 % Main Loop
 while sigma>sigma_min
