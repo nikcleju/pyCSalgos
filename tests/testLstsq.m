@@ -7,6 +7,7 @@ load testLstsq
 
 tic
 for i = 1:nruns
-    A \ b;
+    %A \ b;
+    svd(A);
 end
 toc
