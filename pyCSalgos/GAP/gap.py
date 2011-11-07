@@ -9,13 +9,12 @@ Created on Thu Oct 13 14:05:22 2011
 #from scipy import *
 import numpy as np
 import scipy as sp
-from scipy import linalg
+import scipy.stats #from scipy import stats
+import scipy.linalg #from scipy import lnalg
 import math
 
 from numpy.random import RandomState
 rng = RandomState()
-
-
 
 def Generate_Analysis_Operator(d, p):
   # generate random tight frame with equal column norms
@@ -36,10 +35,10 @@ def Generate_Analysis_Operator(d, p):
         #Omega = U * [eye(d); zeros(p-d,d)] * V';
         Omega2 = np.dot(np.dot(U, np.concatenate((np.eye(d), np.zeros((p-d,d))))), V.transpose())
         #Omega = diag(1./sqrt(diag(Omega*Omega')))*Omega;
-        Omega = np.dot(np.diag(1 / np.sqrt(np.diag(np.dot(Omega2,Omega2.transpose())))), Omega2)
+        Omega = np.dot(np.diag(1.0 / np.sqrt(np.diag(np.dot(Omega2,Omega2.transpose())))), Omega2)
     #end
     ##disp(j);
-#end
+    #end
   return Omega
 
 
@@ -157,8 +156,8 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
     d = xinit.size
     lagmultmax = 1e5;
     lagmultmin = 1e-4;
-    lagmultfactor = 2;
-    accuracy_adjustment_exponent = 4/5;
+    lagmultfactor = 2.0;
+    accuracy_adjustment_exponent = 4/5.;
     lagmult = max(min(ilagmult, lagmultmax), lagmultmin);
     was_infeasible = 0;
     was_feasible = 0;
@@ -167,30 +166,29 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
     ## Computation done using direct matrix computation from matlab. (no conjugate gradient method.)
     #######################################################################
     #if strcmp(params.l2solver, 'pseudoinverse')
-    if params['solver'] == 'pseudoinverse':
+    if params['l2solver'] == 'pseudoinverse':
     #if strcmp(class(M), 'double') && strcmp(class(Omega), 'double')
       if M.dtype == 'float64' and Omega.dtype == 'double':
-        while 1:
+        while True:
             alpha = math.sqrt(lagmult);
-            #xhat = np.concatenate((M, alpha*Omega(Lambdahat,:)]\[y; zeros(length(Lambdahat), 1)];
-            xhat = np.concatenate((M, np.linalg.lstsq(alpha*Omega[Lambdahat,:],np.concatenate((y, np.zeros(Lambdahat.size, 1))))));
+            xhat = np.linalg.lstsq(np.concatenate((M, alpha*Omega[Lambdahat,:])), np.concatenate((y, np.zeros(Lambdahat.size))))[0]
             temp = np.linalg.norm(y - np.dot(M,xhat), 2);
             #disp(['fidelity error=', num2str(temp), ' lagmult=', num2str(lagmult)]);
             if temp <= params['noise_level']:
-                was_feasible = 1;
-                if was_infeasible == 1:
+                was_feasible = True;
+                if was_infeasible:
                     break;
                 else:
                     lagmult = lagmult*lagmultfactor;
             elif temp > params['noise_level']:
-                was_infeasible = 1;
-                if was_feasible == 1:
-                    xhat = xprev;
+                was_infeasible = True;
+                if was_feasible:
+                    xhat = xprev.copy();
                     break;
                 lagmult = lagmult/lagmultfactor;
             if lagmult < lagmultmin or lagmult > lagmultmax:
                 break;
-            xprev = xhat;
+            xprev = xhat.copy();
         arepr = np.dot(Omega[Lambdahat, :], xhat);
         return xhat,arepr,lagmult;
 
@@ -205,8 +203,8 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
         b = np.dot(MH, y);
     
     norm_b = np.linalg.norm(b, 2);
-    xhat = xinit;
-    xprev = xinit;
+    xhat = xinit.copy();
+    xprev = xinit.copy();
     residual = TheHermitianMatrix(xhat, M, MH, Omega, OmegaH, Lambdahat, lagmult) - b;
     direction = -residual;
     iter = 0;
@@ -215,7 +213,7 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
         iter = iter + 1;
         alpha = np.linalg.norm(residual,2)**2 / np.dot(direction.T, TheHermitianMatrix(direction, M, MH, Omega, OmegaH, Lambdahat, lagmult));
         xhat = xhat + alpha*direction;
-        prev_residual = residual;
+        prev_residual = residual.copy();
         residual = TheHermitianMatrix(xhat, M, MH, Omega, OmegaH, Lambdahat, lagmult) - b;
         beta = np.linalg.norm(residual,2)**2 / np.linalg.norm(prev_residual,2)**2;
         direction = -residual + beta*direction;
@@ -238,8 +236,8 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
             #disp(['residual=', num2str(norm(residual,2)), ' norm_b=', num2str(norm_b), ' omegapart=', num2str(u), ' fidelity error=', num2str(temp), ' lagmult=', num2str(lagmult), ' iter=', num2str(iter)]);
             
             if temp <= params['noise_level']:
-                was_feasible = 1;
-                if was_infeasible == 1:
+                was_feasible = True;
+                if was_infeasible:
                     break;
                 else:
                     lagmult = lagmultfactor*lagmult;
@@ -248,16 +246,16 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
                     iter = 0;
             elif temp > params['noise_level']:
                 lagmult = lagmult/lagmultfactor;
-                if was_feasible == 1:
-                    xhat = xprev;
+                if was_feasible:
+                    xhat = xprev.copy();
                     break;
-                was_infeasible = 1;
+                was_infeasible = True;
                 residual = TheHermitianMatrix(xhat, M, MH, Omega, OmegaH, Lambdahat, lagmult) - b;
                 direction = -residual;
                 iter = 0;
             if lagmult > lagmultmax or lagmult < lagmultmin:
                 break;
-            xprev = xhat;
+            xprev = xhat.copy();
         #elseif norm(xprev-xhat)/norm(xhat) < 1e-2
         #    disp(['rel_change=', num2str(norm(xprev-xhat)/norm(xhat))]);
         #    if strcmp(class(M), 'function_handle')
@@ -310,3 +308,164 @@ def TheHermitianMatrix(x, M, MH, Omega, OmegaH, L, lm):
         w = w + lm*np.dot(np.dot(OmegaH[:, L],Omega[L, :]),x);
     
     return w
+
+def GAP(y, M, MH, Omega, OmegaH, params, xinit):
+  #function [xhat, Lambdahat] = GAP(y, M, MH, Omega, OmegaH, params, xinit)
+  
+  ##
+  # [xhat, Lambdahat] = GAP(y, M, MH, Omega, OmegaH, params, xinit)
+  #
+  # Greedy Analysis Pursuit Algorithm
+  # This aims to find an approximate (sometimes exact) solution of
+  #    xhat = argmin || Omega * x ||_0   subject to   || y - M * x ||_2 <= epsilon.
+  #
+  # Outputs:
+  #   xhat : estimate of the target cosparse vector x0.
+  #   Lambdahat : estimate of the cosupport of x0.
+  #
+  # Inputs:
+  #   y : observation/measurement vector of a target cosparse solution x0,
+  #       given by relation  y = M * x0 + noise.
+  #   M : measurement matrix. This should be given either as a matrix or as a function handle
+  #       which implements linear transformation.
+  #   MH : conjugate transpose of M. 
+  #   Omega : analysis operator. Like M, this should be given either as a matrix or as a function
+  #           handle which implements linear transformation.
+  #   OmegaH : conjugate transpose of OmegaH.
+  #   params : parameters that govern the behavior of the algorithm (mostly).
+  #      params.num_iteration : GAP performs this number of iterations.
+  #      params.greedy_level : determines how many rows of Omega GAP eliminates at each iteration.
+  #                            if the value is < 1, then the rows to be eliminated are determined by
+  #                                j : |omega_j * xhat| > greedy_level * max_i |omega_i * xhat|.
+  #                            if the value is >= 1, then greedy_level is the number of rows to be
+  #                            eliminated at each iteration.
+  #      params.stopping_coefficient_size : when the maximum analysis coefficient is smaller than
+  #                                         this, GAP terminates.
+  #      params.l2solver : legitimate values are 'pseudoinverse' or 'cg'. determines which method
+  #                        is used to compute
+  #                        argmin || Omega_Lambdahat * x ||_2   subject to  || y - M * x ||_2 <= epsilon.
+  #      params.l2_accuracy : when l2solver is 'cg', this determines how accurately the above 
+  #                           problem is solved.
+  #      params.noise_level : this corresponds to epsilon above.
+  #   xinit : initial estimate of x0 that GAP will start with. can be zeros(d, 1).
+  #
+  # Examples:
+  #
+  # Not particularly interesting:
+  # >> d = 100; p = 110; m = 60; 
+  # >> M = randn(m, d);
+  # >> Omega = randn(p, d);
+  # >> y = M * x0 + noise;
+  # >> params.num_iteration = 40;
+  # >> params.greedy_level = 0.9;
+  # >> params.stopping_coefficient_size = 1e-4;
+  # >> params.l2solver = 'pseudoinverse';
+  # >> [xhat, Lambdahat] = GAP(y, M, M', Omega, Omega', params, zeros(d, 1));
+  #
+  # Assuming that FourierSampling.m, FourierSamplingH.m, FDAnalysis.m, etc. exist:
+  # >> n = 128;
+  # >> M = @(t) FourierSampling(t, n);
+  # >> MH = @(u) FourierSamplingH(u, n);
+  # >> Omega = @(t) FDAnalysis(t, n);
+  # >> OmegaH = @(u) FDSynthesis(t, n);
+  # >> params.num_iteration = 1000;
+  # >> params.greedy_level = 50;
+  # >> params.stopping_coefficient_size = 1e-5;
+  # >> params.l2solver = 'cg';   # in fact, 'pseudoinverse' does not even make sense.
+  # >> [xhat, Lambdahat] = GAP(y, M, MH, Omega, OmegaH, params, zeros(d, 1));
+  #
+  # Above: FourierSampling and FourierSamplingH are conjugate transpose of each other.
+  #        FDAnalysis and FDSynthesis are conjugate transpose of each other.
+  #        These routines are problem specific and need to be implemented by the user.
+  
+  #d = length(xinit(:));
+  d = xinit.size
+  
+  #if strcmp(class(Omega), 'function_handle')
+  #    p = length(Omega(zeros(d,1)));
+  #else    ## Omega is a matrix
+  #    p = size(Omega, 1);
+  #end
+  if hasattr(Omega, '__call__'):
+      p = Omega(np.zeros((d,1)))
+  else:
+      p = Omega.shape[0]
+  
+  
+  iter = 0
+  lagmult = 1e-4
+  #Lambdahat = 1:p;
+  Lambdahat = np.arange(p)
+  #while iter < params.num_iteration
+  while iter < params["num_iteration"]:
+      iter = iter + 1
+      #[xhat, analysis_repr, lagmult] = ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, lagmult, params);
+      xhat,analysis_repr,lagmult = ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, lagmult, params)
+      #[to_be_removed, maxcoef] = FindRowsToRemove(analysis_repr, params.greedy_level);
+      to_be_removed, maxcoef = FindRowsToRemove(analysis_repr, params["greedy_level"])
+      #disp(['** maxcoef=', num2str(maxcoef), ' target=', num2str(params.stopping_coefficient_size), ' rows_remaining=', num2str(length(Lambdahat)), ' lagmult=', num2str(lagmult)]);
+      print '** maxcoef=',maxcoef,' target=',params['stopping_coefficient_size'],' rows_remaining=',Lambdahat.size,' lagmult=',lagmult
+      if check_stopping_criteria(xhat, xinit, maxcoef, lagmult, Lambdahat, params):
+          break
+
+      xinit = xhat.copy()
+      #Lambdahat[to_be_removed] = []
+      Lambdahat = np.delete(Lambdahat, to_be_removed)
+  
+      #n = sqrt(d);
+      #figure(9);
+      #RR = zeros(2*n, n-1);
+      #RR(Lambdahat) = 1;
+      #XD = ones(n, n);
+      #XD(:, 2:end) = XD(:, 2:end) .* RR(1:n, :);
+      #XD(:, 1:(end-1)) = XD(:, 1:(end-1)) .* RR(1:n, :);
+      #XD(2:end, :) = XD(2:end, :) .* RR((n+1):(2*n), :)';
+      #XD(1:(end-1), :) = XD(1:(end-1), :) .* RR((n+1):(2*n), :)';
+      #XD = FD2DiagnosisPlot(n, Lambdahat);
+      #imshow(XD);
+      #figure(10);
+      #imshow(reshape(real(xhat), n, n));
+  
+  #return;
+  return xhat, Lambdahat
+ 
+def FindRowsToRemove(analysis_repr, greedy_level):
+#function [to_be_removed, maxcoef] = FindRowsToRemove(analysis_repr, greedy_level)
+
+    #abscoef = abs(analysis_repr(:));
+    abscoef = np.abs(analysis_repr)
+    #n = length(abscoef);
+    n = abscoef.size
+    #maxcoef = max(abscoef);
+    maxcoef = abscoef.max()
+    if greedy_level >= 1:
+        #qq = quantile(abscoef, 1.0-greedy_level/n);
+        qq = sp.stats.mstats.mquantile(abscoef, 1.0-greedy_level/n, 0.5, 0.5)        
+    else:
+        qq = maxcoef*greedy_level
+
+    #to_be_removed = find(abscoef >= qq);
+    to_be_removed = np.nonzero(abscoef >= qq)
+    #return;
+    return to_be_removed, maxcoef
+
+def check_stopping_criteria(xhat, xinit, maxcoef, lagmult, Lambdahat, params):
+#function r = check_stopping_criteria(xhat, xinit, maxcoef, lagmult, Lambdahat, params)
+
+    #if isfield(params, 'stopping_coefficient_size') && maxcoef < params.stopping_coefficient_size
+    if ('stopping_coefficient_size' in params) and maxcoef < params['stopping_coefficient_size']:
+        return 1
+
+    #if isfield(params, 'stopping_lagrange_multiplier_size') && lagmult > params.stopping_lagrange_multiplier_size
+    if ('stopping_lagrange_multiplier_size' in params) and lagmult > params['stopping_lagrange_multiplier_size']:
+        return 1
+
+    #if isfield(params, 'stopping_relative_solution_change') && norm(xhat-xinit)/norm(xhat) < params.stopping_relative_solution_change
+    if ('stopping_relative_solution_change' in params) and np.linalg.norm(xhat-xinit)/np.linalg.norm(xhat) < params['stopping_relative_solution_change']:
+        return 1
+
+    #if isfield(params, 'stopping_cosparsity') && length(Lambdahat) < params.stopping_cosparsity
+    if ('stopping_cosparsity' in params) and Lambdahat.size() < params['stopping_cosparsity']:
+        return 1
+    
+    return 0
