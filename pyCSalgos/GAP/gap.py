@@ -70,6 +70,7 @@ def Generate_Data_Known_Omega(Omega, d,p,m,k,noiselevel, numvectors, normstr):
   LambdaMat = np.zeros((k,numvectors))
   x0 = np.zeros((d,numvectors))
   y = np.zeros((m,numvectors))
+  realnoise = np.zeros((m,numvectors))
   
   M = rng.randn(m,d);
   
@@ -120,9 +121,10 @@ def Generate_Data_Known_Omega(Omega, d,p,m,k,noiselevel, numvectors, normstr):
     t_norm = np.linalg.norm(y[:,i],2);
     n = np.squeeze(rng.randn(m, 1));
     y[:,i] = y[:,i] + noiselevel * t_norm * n / np.linalg.norm(n, 2);
+    realnoise[:,i] = noiselevel * t_norm * n / np.linalg.norm(n, 2)
   #end
 
-  return x0,y,M,LambdaMat
+  return x0,y,M,LambdaMat,realnoise
 
 #####################
 
@@ -404,7 +406,7 @@ def GAP(y, M, MH, Omega, OmegaH, params, xinit):
       #[to_be_removed, maxcoef] = FindRowsToRemove(analysis_repr, params.greedy_level);
       to_be_removed, maxcoef = FindRowsToRemove(analysis_repr, params["greedy_level"])
       #disp(['** maxcoef=', num2str(maxcoef), ' target=', num2str(params.stopping_coefficient_size), ' rows_remaining=', num2str(length(Lambdahat)), ' lagmult=', num2str(lagmult)]);
-      print '** maxcoef=',maxcoef,' target=',params['stopping_coefficient_size'],' rows_remaining=',Lambdahat.size,' lagmult=',lagmult
+      #print '** maxcoef=',maxcoef,' target=',params['stopping_coefficient_size'],' rows_remaining=',Lambdahat.size,' lagmult=',lagmult
       if check_stopping_criteria(xhat, xinit, maxcoef, lagmult, Lambdahat, params):
           break
 
