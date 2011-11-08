@@ -28,12 +28,21 @@ def sl0_paramsetup(y,M,Omega,epsilon,lbd):
   aggD = np.concatenate((aggDupper, lbd * aggDlower))
   aggy = np.concatenate((y, np.zeros(N-n)))
   
-  sigmamin = 0.1
-  return aggD,aggy,epsilon,sigmamin
+  sigmamin = 0.01
+  sigma_decrease_factor = 0.8
+  mu_0 = 2
+  L = 10
+  return aggD,aggy,epsilon,sigmamin,sigma_decrease_factor,mu_0,L
+
+def post_multiply_with_D(D,gamma):
+    return np.dot(D,gamma)
+def post_do_nothing(D,gamma):
+    return gamma
 
 # Define tuples (algorithm setup function, algorithm function, name)
-gap = (gap_paramsetup, pyCSalgos.GAP.GAP.GAP, 'GAP')
-sl0 = (sl0_paramsetup, pyCSalgos.SL0.SL0_approx.SL0_approx, 'SL0_approx')
+gap = (gap_paramsetup, pyCSalgos.GAP.GAP.GAP, post_do_nothing, 'GAP')
+sl0 = (sl0_paramsetup, pyCSalgos.SL0.SL0_approx.SL0_approx, post_multiply_with_D, 'SL0_approx')
+#sl0 = (sl0_paramsetup, lambda x: np.dot(x[0],x[1]()), 'SL0_approx')
 
 # Main function
 def mainrun():
@@ -46,11 +55,11 @@ def mainrun():
   sigma = 2.0;
   delta = 0.8;
   rho   = 0.15;
-  numvects = 2; # Number of vectors to generate
-  SNRdb = 20;    # This is norm(signal)/norm(noise), so power, not energy
+  numvects = 10; # Number of vectors to generate
+  SNRdb = 20.;    # This is norm(signal)/norm(noise), so power, not energy
 
   # Process parameters
-  noiselevel = 1 / (10^(SNRdb/10));
+  noiselevel = 1.0 / (10.0**(SNRdb/10.0));
   d = 50;
   p = round(sigma*d);
   m = round(delta*d);
@@ -75,17 +84,17 @@ def mainrun():
   err = dict()
   relerr = dict()
   for i,algo in zip(np.arange(numalgos),algos):
-    xrec[algo[2]]   = np.zeros((lambdas.size, d, y.shape[1]))
-    err[algo[2]]    = np.zeros((lambdas.size, y.shape[1]))
-    relerr[algo[2]] = np.zeros((lambdas.size, y.shape[1]))
+    xrec[algo[3]]   = np.zeros((lambdas.size, d, y.shape[1]))
+    err[algo[3]]    = np.zeros((lambdas.size, y.shape[1]))
+    relerr[algo[3]] = np.zeros((lambdas.size, y.shape[1]))
   
   for ilbd,lbd in zip(np.arange(lambdas.size),lambdas):
     for iy in np.arange(y.shape[1]):
-      for algosetupfunc,algofunc,strname in algos:
+      for algosetupfunc,algofunc,algopostfunc,strname in algos:
         epsilon = 1.1 * np.linalg.norm(realnoise[:,iy])
         
         inparams = algosetupfunc(y[:,iy],M,Omega,epsilon,lbd)
-        xrec[strname][ilbd,:,iy] = algofunc(*inparams)[0]
+        xrec[strname][ilbd,:,iy] = algopostfunc(algofunc(*inparams)[0])
         
         err[strname][ilbd,iy]    = np.linalg.norm(x0[:,iy] - xrec[strname][ilbd,:,iy])
         relerr[strname][ilbd,iy] = err[strname][ilbd,iy] / np.linalg.norm(x0[:,iy])
