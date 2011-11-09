@@ -84,6 +84,7 @@ def mainrun():
       Omega,x0,y,M,realnoise = genData(d,sigma,delta,rho,numvects,SNRdb)
       
       # Run algorithms
+      print "***** delta = ",delta," rho = ",rho
       mrelerrN,mrelerrL = runonce(algosN,algosL,Omega,y,lambdas,realnoise,M,x0)
       
       for algotuple in algosN: 
