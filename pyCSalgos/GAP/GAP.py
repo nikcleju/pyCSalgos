@@ -7,10 +7,11 @@ Created on Thu Oct 13 14:05:22 2011
 
 #from numpy import *
 #from scipy import *
-import numpy as np
+import numpy
+import numpy.linalg
 import scipy as sp
-import scipy.stats #from scipy import stats
-import scipy.linalg #from scipy import lnalg
+#import scipy.stats #from scipy import stats
+#import scipy.linalg #from scipy import lnalg
 import math
 
 from numpy.random import RandomState
@@ -20,22 +21,22 @@ def Generate_Analysis_Operator(d, p):
   # generate random tight frame with equal column norms
   if p == d:
     T = rng.randn(d,d);
-    [Omega, discard] = np.qr(T);
+    [Omega, discard] = numpy.qr(T);
   else:
     Omega = rng.randn(p, d);
-    T = np.zeros((p, d));
+    T = numpy.zeros((p, d));
     tol = 1e-8;
     max_j = 200;
     j = 1;
-    while (sum(sum(abs(T-Omega))) > np.dot(tol,np.dot(p,d)) and j < max_j):
+    while (sum(sum(abs(T-Omega))) > numpy.dot(tol,numpy.dot(p,d)) and j < max_j):
         j = j + 1;
         T = Omega;
-        [U, S, Vh] = sp.linalg.svd(Omega);
+        [U, S, Vh] = numpy.linalg.svd(Omega);
         V = Vh.T
         #Omega = U * [eye(d); zeros(p-d,d)] * V';
-        Omega2 = np.dot(np.dot(U, np.concatenate((np.eye(d), np.zeros((p-d,d))))), V.transpose())
+        Omega2 = numpy.dot(numpy.dot(U, numpy.concatenate((numpy.eye(d), numpy.zeros((p-d,d))))), V.transpose())
         #Omega = diag(1./sqrt(diag(Omega*Omega')))*Omega;
-        Omega = np.dot(np.diag(1.0 / np.sqrt(np.diag(np.dot(Omega2,Omega2.transpose())))), Omega2)
+        Omega = numpy.dot(numpy.diag(1.0 / numpy.sqrt(numpy.diag(numpy.dot(Omega2,Omega2.transpose())))), Omega2)
     #end
     ##disp(j);
     #end
@@ -67,10 +68,10 @@ def Generate_Data_Known_Omega(Omega, d,p,m,k,noiselevel, numvectors, normstr):
   # end
   
   #Init
-  LambdaMat = np.zeros((k,numvectors))
-  x0 = np.zeros((d,numvectors))
-  y = np.zeros((m,numvectors))
-  realnoise = np.zeros((m,numvectors))
+  LambdaMat = numpy.zeros((k,numvectors))
+  x0 = numpy.zeros((d,numvectors))
+  y = numpy.zeros((m,numvectors))
+  realnoise = numpy.zeros((m,numvectors))
   
   M = rng.randn(m,d);
   
@@ -84,17 +85,17 @@ def Generate_Data_Known_Omega(Omega, d,p,m,k,noiselevel, numvectors, normstr):
         
         #Lambda=randperm(p); 
         Lambda = rng.permutation(int(p));
-        Lambda = np.sort(Lambda[0:k]); 
+        Lambda = numpy.sort(Lambda[0:k]); 
         LambdaMat[:,i] = Lambda; # store for output
         
         # The signal is drawn at random from the null-space defined by the rows 
         # of the matreix Omega(Lambda,:)
-        [U,D,Vh] = sp.linalg.svd(Omega[Lambda,:]);
+        [U,D,Vh] = numpy.linalg.svd(Omega[Lambda,:]);
         V = Vh.T
         NullSpace = V[:,k:];
-        #print np.dot(NullSpace, rng.randn(d-k,1)).shape
+        #print numpy.dot(NullSpace, rng.randn(d-k,1)).shape
         #print x0[:,i].shape
-        x0[:,i] = np.squeeze(np.dot(NullSpace, rng.randn(d-k,1)));
+        x0[:,i] = numpy.squeeze(numpy.dot(NullSpace, rng.randn(d-k,1)));
         # Nic: add orthogonality noise
         #     orthonoiseSNRdb = 6;
         #     n = randn(p,1);
@@ -115,13 +116,13 @@ def Generate_Data_Known_Omega(Omega, d,p,m,k,noiselevel, numvectors, normstr):
     #end
     
     # Acquire measurements
-    y[:,i]  = np.dot(M, x0[:,i])
+    y[:,i]  = numpy.dot(M, x0[:,i])
 
     # Add noise
-    t_norm = np.linalg.norm(y[:,i],2);
-    n = np.squeeze(rng.randn(m, 1));
-    y[:,i] = y[:,i] + noiselevel * t_norm * n / np.linalg.norm(n, 2);
-    realnoise[:,i] = noiselevel * t_norm * n / np.linalg.norm(n, 2)
+    t_norm = numpy.linalg.norm(y[:,i],2);
+    n = numpy.squeeze(rng.randn(m, 1));
+    y[:,i] = y[:,i] + noiselevel * t_norm * n / numpy.linalg.norm(n, 2);
+    realnoise[:,i] = noiselevel * t_norm * n / numpy.linalg.norm(n, 2)
   #end
 
   return x0,y,M,LambdaMat,realnoise
@@ -173,8 +174,8 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
       if M.dtype == 'float64' and Omega.dtype == 'double':
         while True:
             alpha = math.sqrt(lagmult);
-            xhat = np.linalg.lstsq(np.concatenate((M, alpha*Omega[Lambdahat,:])), np.concatenate((y, np.zeros(Lambdahat.size))))[0]
-            temp = np.linalg.norm(y - np.dot(M,xhat), 2);
+            xhat = numpy.linalg.lstsq(numpy.concatenate((M, alpha*Omega[Lambdahat,:])), numpy.concatenate((y, numpy.zeros(Lambdahat.size))))[0]
+            temp = numpy.linalg.norm(y - numpy.dot(M,xhat), 2);
             #disp(['fidelity error=', num2str(temp), ' lagmult=', num2str(lagmult)]);
             if temp <= params['noise_level']:
                 was_feasible = True;
@@ -191,7 +192,7 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
             if lagmult < lagmultmin or lagmult > lagmultmax:
                 break;
             xprev = xhat.copy();
-        arepr = np.dot(Omega[Lambdahat, :], xhat);
+        arepr = numpy.dot(Omega[Lambdahat, :], xhat);
         return xhat,arepr,lagmult;
 
 
@@ -202,9 +203,9 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
     if hasattr(MH, '__call__'):
         b = MH(y);
     else:
-        b = np.dot(MH, y);
+        b = numpy.dot(MH, y);
     
-    norm_b = np.linalg.norm(b, 2);
+    norm_b = numpy.linalg.norm(b, 2);
     xhat = xinit.copy();
     xprev = xinit.copy();
     residual = TheHermitianMatrix(xhat, M, MH, Omega, OmegaH, Lambdahat, lagmult) - b;
@@ -213,26 +214,26 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
     
     while iter < params.max_inner_iteration:
         iter = iter + 1;
-        alpha = np.linalg.norm(residual,2)**2 / np.dot(direction.T, TheHermitianMatrix(direction, M, MH, Omega, OmegaH, Lambdahat, lagmult));
+        alpha = numpy.linalg.norm(residual,2)**2 / numpy.dot(direction.T, TheHermitianMatrix(direction, M, MH, Omega, OmegaH, Lambdahat, lagmult));
         xhat = xhat + alpha*direction;
         prev_residual = residual.copy();
         residual = TheHermitianMatrix(xhat, M, MH, Omega, OmegaH, Lambdahat, lagmult) - b;
-        beta = np.linalg.norm(residual,2)**2 / np.linalg.norm(prev_residual,2)**2;
+        beta = numpy.linalg.norm(residual,2)**2 / numpy.linalg.norm(prev_residual,2)**2;
         direction = -residual + beta*direction;
         
-        if np.linalg.norm(residual,2)/norm_b < params['l2_accuracy']*(lagmult**(accuracy_adjustment_exponent)) or iter == params['max_inner_iteration']:
+        if numpy.linalg.norm(residual,2)/norm_b < params['l2_accuracy']*(lagmult**(accuracy_adjustment_exponent)) or iter == params['max_inner_iteration']:
             #if strcmp(class(M), 'function_handle')
             if hasattr(M, '__call__'):
-                temp = np.linalg.norm(y-M(xhat), 2);
+                temp = numpy.linalg.norm(y-M(xhat), 2);
             else:
-                temp = np.linalg.norm(y-np.dot(M,xhat), 2);
+                temp = numpy.linalg.norm(y-numpy.dot(M,xhat), 2);
             
             #if strcmp(class(Omega), 'function_handle')
             if hasattr(Omega, '__call__'):
                 u = Omega(xhat);
-                u = math.sqrt(lagmult)*np.linalg.norm(u(Lambdahat), 2);
+                u = math.sqrt(lagmult)*numpy.linalg.norm(u(Lambdahat), 2);
             else:
-                u = math.sqrt(lagmult)*np.linalg.norm(Omega[Lambdahat,:]*xhat, 2);
+                u = math.sqrt(lagmult)*numpy.linalg.norm(Omega[Lambdahat,:]*xhat, 2);
             
             
             #disp(['residual=', num2str(norm(residual,2)), ' norm_b=', num2str(norm_b), ' omegapart=', num2str(u), ' fidelity error=', num2str(temp), ' lagmult=', num2str(lagmult), ' iter=', num2str(iter)]);
@@ -285,7 +286,7 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
         temp = Omega(xhat);
         arepr = temp(Lambdahat);
     else:    ## here Omega is assumed to be a matrix
-        arepr = np.dot(Omega[Lambdahat, :], xhat);
+        arepr = numpy.dot(Omega[Lambdahat, :], xhat);
     
     return xhat,arepr,lagmult
 
@@ -299,15 +300,15 @@ def TheHermitianMatrix(x, M, MH, Omega, OmegaH, L, lm):
     if hasattr(M, '__call__'):
         w = MH(M(x));
     else:    ## M and MH are matrices
-        w = np.dot(np.dot(MH, M), x);
+        w = numpy.dot(numpy.dot(MH, M), x);
     
     if hasattr(Omega, '__call__'):
         v = Omega(x);
-        vt = np.zeros(v.size);
+        vt = numpy.zeros(v.size);
         vt[L] = v[L].copy();
         w = w + lm*OmegaH(vt);
     else:    ## Omega is assumed to be a matrix and OmegaH is its conjugate transpose
-        w = w + lm*np.dot(np.dot(OmegaH[:, L],Omega[L, :]),x);
+        w = w + lm*numpy.dot(numpy.dot(OmegaH[:, L],Omega[L, :]),x);
     
     return w
 
@@ -389,7 +390,7 @@ def GAP(y, M, MH, Omega, OmegaH, params, xinit):
   #    p = size(Omega, 1);
   #end
   if hasattr(Omega, '__call__'):
-      p = Omega(np.zeros((d,1)))
+      p = Omega(numpy.zeros((d,1)))
   else:
       p = Omega.shape[0]
   
@@ -397,14 +398,14 @@ def GAP(y, M, MH, Omega, OmegaH, params, xinit):
   iter = 0
   lagmult = 1e-4
   #Lambdahat = 1:p;
-  Lambdahat = np.arange(p)
+  Lambdahat = numpy.arange(p)
   #while iter < params.num_iteration
   while iter < params["num_iteration"]:
       iter = iter + 1
       #[xhat, analysis_repr, lagmult] = ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, lagmult, params);
       xhat,analysis_repr,lagmult = ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, lagmult, params)
       #[to_be_removed, maxcoef] = FindRowsToRemove(analysis_repr, params.greedy_level);
-      to_be_removed, maxcoef = FindRowsToRemove(analysis_repr, params["greedy_level"])
+      to_be_removed,maxcoef = FindRowsToRemove(analysis_repr, params["greedy_level"])
       #disp(['** maxcoef=', num2str(maxcoef), ' target=', num2str(params.stopping_coefficient_size), ' rows_remaining=', num2str(length(Lambdahat)), ' lagmult=', num2str(lagmult)]);
       #print '** maxcoef=',maxcoef,' target=',params['stopping_coefficient_size'],' rows_remaining=',Lambdahat.size,' lagmult=',lagmult
       if check_stopping_criteria(xhat, xinit, maxcoef, lagmult, Lambdahat, params):
@@ -412,9 +413,7 @@ def GAP(y, M, MH, Omega, OmegaH, params, xinit):
 
       xinit = xhat.copy()
       #Lambdahat[to_be_removed] = []
-      # TODO: find what why squeeze() is needed here!!
-      if len(to_be_removed) != 0:
-        Lambdahat = np.delete(Lambdahat.squeeze(),to_be_removed)
+      Lambdahat = numpy.delete(Lambdahat.squeeze(),to_be_removed)
   
       #n = sqrt(d);
       #figure(9);
@@ -431,13 +430,13 @@ def GAP(y, M, MH, Omega, OmegaH, params, xinit):
       #imshow(reshape(real(xhat), n, n));
   
   #return;
-  return xhat, Lambdahat
+  return xhat,Lambdahat
  
 def FindRowsToRemove(analysis_repr, greedy_level):
 #function [to_be_removed, maxcoef] = FindRowsToRemove(analysis_repr, greedy_level)
 
     #abscoef = abs(analysis_repr(:));
-    abscoef = np.abs(analysis_repr)
+    abscoef = numpy.abs(analysis_repr)
     #n = length(abscoef);
     n = abscoef.size
     #maxcoef = max(abscoef);
@@ -449,9 +448,10 @@ def FindRowsToRemove(analysis_repr, greedy_level):
         qq = maxcoef*greedy_level
 
     #to_be_removed = find(abscoef >= qq);
-    to_be_removed = np.nonzero(abscoef >= qq)
+    # [0] needed because nonzero() returns a tuple of arrays!
+    to_be_removed = numpy.nonzero(abscoef >= qq)[0]
     #return;
-    return to_be_removed, maxcoef
+    return to_be_removed,maxcoef
 
 def check_stopping_criteria(xhat, xinit, maxcoef, lagmult, Lambdahat, params):
 #function r = check_stopping_criteria(xhat, xinit, maxcoef, lagmult, Lambdahat, params)
@@ -465,7 +465,7 @@ def check_stopping_criteria(xhat, xinit, maxcoef, lagmult, Lambdahat, params):
         return 1
 
     #if isfield(params, 'stopping_relative_solution_change') && norm(xhat-xinit)/norm(xhat) < params.stopping_relative_solution_change
-    if ('stopping_relative_solution_change' in params) and np.linalg.norm(xhat-xinit)/np.linalg.norm(xhat) < params['stopping_relative_solution_change']:
+    if ('stopping_relative_solution_change' in params) and numpy.linalg.norm(xhat-xinit)/numpy.linalg.norm(xhat) < params['stopping_relative_solution_change']:
         return 1
 
     #if isfield(params, 'stopping_cosparsity') && length(Lambdahat) < params.stopping_cosparsity

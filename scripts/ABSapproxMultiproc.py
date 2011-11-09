@@ -8,6 +8,7 @@ Created on Sat Nov 05 18:08:40 2011
 import numpy as np
 import scipy.io
 import math
+from multiprocessing import Pool
 doplot = True
 try: 
   import matplotlib.pyplot as plt
@@ -100,6 +101,7 @@ def mainrun():
   for i,algo in zip(np.arange(nalgosL),algosL):
     meanmatrix[algo[1]]   = np.zeros((lambdas.size, rhos.size, deltas.size))
   
+  jobparams = []
   for idelta,delta in zip(np.arange(deltas.size),deltas):
     for irho,rho in zip(np.arange(rhos.size),rhos):
       
@@ -108,8 +110,17 @@ def mainrun():
       
       # Run algorithms
       print "***** delta = ",delta," rho = ",rho
-      mrelerrN,mrelerrL = runonce(algosN,algosL,Omega,y,lambdas,realnoise,M,x0)
-      
+      #mrelerrN,mrelerrL = runonce(algosN,algosL,Omega,y,lambdas,realnoise,M,x0)
+      jobparams.append((algosN,algosL, Omega,y,lambdas,realnoise,M,x0))
+
+  pool = Pool(4)
+  jobresults = pool.map(runoncetuple,jobparams)
+
+  idx = 0
+  for idelta,delta in zip(np.arange(deltas.size),deltas):
+    for irho,rho in zip(np.arange(rhos.size),rhos):
+      mrelerrN,mrelerrL = jobresults[idx]
+      idx = idx+1
       for algotuple in algosN: 
         meanmatrix[algotuple[1]][irho,idelta] = 1 - mrelerrN[algotuple[1]]
         if meanmatrix[algotuple[1]][irho,idelta] < 0 or math.isnan(meanmatrix[algotuple[1]][irho,idelta]):
@@ -175,6 +186,9 @@ def genData(d,sigma,delta,rho,numvects,SNRdb):
   
   return Omega,x0,y,M,realnoise
 
+def runoncetuple(t):
+  return runonce(*t)
+
 def runonce(algosN,algosL,Omega,y,lambdas,realnoise,M,x0):
   
   d = Omega.shape[1]  
@@ -234,7 +248,7 @@ def runonce(algosN,algosL,Omega,y,lambdas,realnoise,M,x0):
   
 # Script main
 if __name__ == "__main__":
-
   #import cProfile
   #cProfile.run('mainrun()', 'profile')    
+
   mainrun()
