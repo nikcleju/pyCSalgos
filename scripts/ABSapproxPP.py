@@ -10,6 +10,7 @@ import scipy.io
 import math
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import pp
 import pyCSalgos
 import pyCSalgos.GAP.GAP
 import pyCSalgos.SL0.SL0_approx
@@ -76,16 +77,31 @@ def mainrun():
     meanmatrix[algo[1]]   = np.zeros((rhos.size, deltas.size))
   for i,algo in zip(np.arange(nalgosL),algosL):
     meanmatrix[algo[1]]   = np.zeros((lambdas.size, rhos.size, deltas.size))
-  
+
+  # PP: start job server  
+  job_server = pp.Server(ncpus = 1) 
+  idx = 0
+  jobparams = []
   for idelta,delta in zip(np.arange(deltas.size),deltas):
     for irho,rho in zip(np.arange(rhos.size),rhos):
       
       # Generate data and operator
       Omega,x0,y,M,realnoise = genData(d,sigma,delta,rho,numvects,SNRdb)
       
-      # Run algorithms
-      mrelerrN,mrelerrL = runonce(algosN,algosL,Omega,y,lambdas,realnoise,M,x0)
+      jobparams.append((algosN,algosL, Omega,y,lambdas,realnoise,M,x0))
       
+      idx = idx + 1
+      
+  # Run algorithms
+  jobs = [job_server.submit(runonce, jobparam, (run_gap,run_sl0), ('numpy',)) for jobparam in jobparams]
+  #funcarray[idelta,irho] = job_server.submit(runonce,(algosN,algosL, Omega,y,lambdas,realnoise,M,x0), (run_gap,run_sl0))
+      #mrelerrN,mrelerrL = runonce(algosN,algosL,Omega,y,lambdas,realnoise,M,x0)
+
+  # Get data from jobs
+  idx = 0
+  for idelta,delta in zip(np.arange(deltas.size),deltas):
+    for irho,rho in zip(np.arange(rhos.size),rhos):
+      mrelerrN,mrelerrL = jobs[idx]()
       for algotuple in algosN: 
         meanmatrix[algotuple[1]][irho,idelta] = 1 - mrelerrN[algotuple[1]]
         if meanmatrix[algotuple[1]][irho,idelta] < 0 or math.isnan(meanmatrix[algotuple[1]][irho,idelta]):
@@ -95,6 +111,7 @@ def mainrun():
           meanmatrix[algotuple[1]][ilbd,irho,idelta] = 1 - mrelerrL[algotuple[1]][ilbd]
           if meanmatrix[algotuple[1]][ilbd,irho,idelta] < 0 or math.isnan(meanmatrix[algotuple[1]][ilbd,irho,idelta]):
             meanmatrix[algotuple[1]][ilbd,irho,idelta] = 0
+      idx = idx + 1
    
   #  # Prepare matrices to show
   #  showmats = dict()
