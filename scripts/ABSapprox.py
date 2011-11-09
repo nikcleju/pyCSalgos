@@ -8,8 +8,8 @@ Created on Sat Nov 05 18:08:40 2011
 import numpy as np
 import scipy.io
 import math
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
+#import matplotlib.pyplot as plt
+#import matplotlib.cm as cm
 import pyCSalgos
 import pyCSalgos.GAP.GAP
 import pyCSalgos.SL0.SL0_approx
@@ -55,21 +55,22 @@ def mainrun():
   nalgosL = len(algosL)
   
   #Set up experiment parameters
-  d = 50;
+  d = 50.0;
   sigma = 2.0
   deltas = np.arange(0.05,0.95,0.05)
   rhos = np.arange(0.05,0.95,0.05)
-  #deltas = np.array([0.05,0.95])
-  #rhos = np.array([0.05,0.95])
+  #deltas = np.array([0.15,0.95])
+  #rhos = np.array([0.15,0.95])
   #deltas = np.array([0.05])
   #rhos = np.array([0.05])
   #delta = 0.8;
   #rho   = 0.15;
-  numvects = 100; # Number of vectors to generate
+  numvects = 20; # Number of vectors to generate
   SNRdb = 20.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
-  lambdas = np.concatenate((np.array([0]), 10**np.linspace(-5, 4, 10)))
+  #lambdas = np.concatenate((np.array([0]), 10**np.linspace(-5, 4, 10)))
+  lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
 
   meanmatrix = dict()
   for i,algo in zip(np.arange(nalgosN),algosN):

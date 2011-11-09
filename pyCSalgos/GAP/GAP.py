@@ -412,7 +412,8 @@ def GAP(y, M, MH, Omega, OmegaH, params, xinit):
 
       xinit = xhat.copy()
       #Lambdahat[to_be_removed] = []
-      Lambdahat = np.delete(Lambdahat, to_be_removed)
+      # TODO: find what why squeeze() is needed here!!
+      Lambdahat = np.delete(Lambdahat.squeeze(),to_be_removed)
   
       #n = sqrt(d);
       #figure(9);
