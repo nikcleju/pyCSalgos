@@ -57,15 +57,15 @@ def mainrun():
   #Set up experiment parameters
   d = 50;
   sigma = 2.0
-  #deltas = np.arange(0.05,0.95,0.05)
-  #rhos = np.arange(0.05,0.95,0.05)
-  deltas = np.array([0.05,0.95])
-  rhos = np.array([0.05,0.95])
+  deltas = np.arange(0.05,0.95,0.05)
+  rhos = np.arange(0.05,0.95,0.05)
+  #deltas = np.array([0.05,0.95])
+  #rhos = np.array([0.05,0.95])
   #deltas = np.array([0.05])
   #rhos = np.array([0.05])
   #delta = 0.8;
   #rho   = 0.15;
-  numvects = 10; # Number of vectors to generate
+  numvects = 100; # Number of vectors to generate
   SNRdb = 20.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
@@ -119,14 +119,14 @@ def mainrun():
       print "Oops, Type Error"
       raise    
   # Show
-  for algotuple in algosN:
-    plt.figure()
-    plt.imshow(meanmatrix[algotuple[1]], cmap=cm.gray, interpolation='nearest')
-  for algotuple in algosL:
-    for ilbd in np.arange(lambdas.size):
-      plt.figure()
-      plt.imshow(meanmatrix[algotuple[1]][ilbd], cmap=cm.gray, interpolation='nearest')
-  plt.show()
+  #  for algotuple in algosN:
+  #    plt.figure()
+  #    plt.imshow(meanmatrix[algotuple[1]], cmap=cm.gray, interpolation='nearest')
+  #  for algotuple in algosL:
+  #    for ilbd in np.arange(lambdas.size):
+  #      plt.figure()
+  #      plt.imshow(meanmatrix[algotuple[1]][ilbd], cmap=cm.gray, interpolation='nearest')
+  #  plt.show()
   print "Finished."
   
 def genData(d,sigma,delta,rho,numvects,SNRdb):
