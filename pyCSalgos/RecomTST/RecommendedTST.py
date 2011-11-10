@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 #function beta = RecommendedTST(X,Y, nsweep,tol,xinitial,ro)
-def RecommendedTST(X, Y, nsweep=300, tol=0.00001, xinitial=None, ro=0):
+def RecommendedTST(X, Y, nsweep=300, tol=0.00001, xinitial=None, ro=None):
 
   # function beta=RecommendedTST(X,y, nsweep,tol,xinitial,ro)
   # This function gets the measurement matrix and the measurements and
@@ -111,7 +111,7 @@ def RecommendedTST(X, Y, nsweep=300, tol=0.00001, xinitial=None, ro=0):
   #  end
   if xinitial is None:
     xinitial = np.zeros(p)
-  if ro == 0:
+  if ro == None:
     ro = 0.044417*delta**2 + 0.34142*delta + 0.14844
   
   k1 = math.floor(ro*n)
