@@ -119,12 +119,12 @@ def standard_params():
   #Set up standard experiment parameters
   d = 50.0;
   sigma = 2.0
-  #deltas = np.arange(0.05,1.,0.05)
-  #rhos = np.arange(0.05,1.,0.05)
+  deltas = np.arange(0.05,1.,0.05)
+  rhos = np.arange(0.05,1.,0.05)
   #deltas = np.array([0.05, 0.45, 0.95])
   #rhos = np.array([0.05, 0.45, 0.95])
-  deltas = np.array([0.05])
-  rhos = np.array([0.05])
+  #deltas = np.array([0.05])
+  #rhos = np.array([0.05])
   #delta = 0.8;
   #rho   = 0.15;
   numvects = 100; # Number of vectors to generate
