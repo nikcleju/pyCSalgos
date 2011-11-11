@@ -83,7 +83,9 @@ def run_tst(y,M,Omega,D,U,S,Vt,epsilon,lbd):
   aggD = np.concatenate((aggDupper, lbd * aggDlower))
   aggy = np.concatenate((y, np.zeros(N-n)))
   
-  return pyCSalgos.RecomTST.RecommendedTST.RecommendedTST(aggD, aggy, nsweep=3000, tol=epsilon / np.linalg.norm(aggy))
+  nsweep = 300
+  tol = epsilon / np.linalg.norm(aggy)
+  return pyCSalgos.RecomTST.RecommendedTST.RecommendedTST(aggD, aggy, nsweep=nsweep, tol=tol)
 
 #==========================
 # Define tuples (algorithm function, name)
@@ -98,7 +100,20 @@ tst = (run_tst, 'TST')
 #  1. Algorithms not depending on lambda
 algosN = gap,   # tuple
 #  2. Algorithms depending on lambda (our ABS approach)
-algosL = sl0,bp,ompeps,tst   # tuple
+#algosL = sl0,bp,ompeps,tst   # tuple
+algosL = sl0,tst
+  
+#==========================
+# Pool initializer function (multiprocessing)
+# Needed to pass the shared variable to the worker processes
+# The variables must be global in the module in order to be seen later in run_once_tuple()
+# see http://stackoverflow.com/questions/1675766/how-to-combine-pool-map-with-array-shared-memory-in-python-multiprocessing
+#==========================
+def initProcess(share, njobs):
+    import sys
+    currmodule = sys.modules[__name__]
+    currmodule.proccount = share
+    currmodule.njobs = njobs
   
 #==========================
 # Interface functions
@@ -119,10 +134,10 @@ def standard_params():
   #Set up standard experiment parameters
   d = 50.0;
   sigma = 2.0
-  deltas = np.arange(0.05,1.,0.05)
-  rhos = np.arange(0.05,1.,0.05)
-  #deltas = np.array([0.05, 0.45, 0.95])
-  #rhos = np.array([0.05, 0.45, 0.95])
+  #deltas = np.arange(0.05,1.,0.05)
+  #rhos = np.arange(0.05,1.,0.05)
+  deltas = np.array([0.05, 0.45, 0.95])
+  rhos = np.array([0.05, 0.45, 0.95])
   #deltas = np.array([0.05])
   #rhos = np.array([0.05])
   #delta = 0.8;
@@ -158,7 +173,12 @@ def run_multi(algosN, algosL, d, sigma, deltas, rhos, lambdas, numvects, SNRdb,
   print "Running phase transition ( run_multi() )"
   
   if doparallel:
-    from multiprocessing import Pool
+    import multiprocessing
+    # Shared value holding the number of finished processes
+    # Add it as global of the module
+    import sys
+    currmodule = sys.modules[__name__]
+    currmodule.proccount = multiprocessing.Value('I', 0) # 'I' = unsigned int, see docs (multiprocessing, array)
     
   if dosaveplot or doshowplot:
     try:
@@ -218,14 +238,17 @@ def run_multi(algosN, algosL, d, sigma, deltas, rhos, lambdas, numvects, SNRdb,
       #Save the parameters, and run after
       print "    delta = ",delta," rho = ",rho
       jobparams.append((algosN,algosL, Omega,y,lambdas,realnoise,M,x0))
-
+  
+  if doparallel:
+    currmodule.njobs = deltas.size * rhos.size  
   print "End of parameters"
   
   # Run
   jobresults = []
+  
   if doparallel:
-    pool = Pool(4)
-    jobresults = pool.map(run_once_tuple,jobparams)
+    pool = multiprocessing.Pool(4,initializer=initProcess,initargs=(currmodule.proccount,currmodule.njobs))
+    jobresults = pool.map(run_once_tuple, jobparams)
   else:
     for jobparam in jobparams:
       jobresults.append(run_once(algosN,algosL,Omega,y,lambdas,realnoise,M,x0))
@@ -245,29 +268,22 @@ def run_multi(algosN, algosL, d, sigma, deltas, rhos, lambdas, numvects, SNRdb,
           meanmatrix[algotuple[1]][ilbd,irho,idelta] = 1 - mrelerrL[algotuple[1]][ilbd]
           if meanmatrix[algotuple[1]][ilbd,irho,idelta] < 0 or math.isnan(meanmatrix[algotuple[1]][ilbd,irho,idelta]):
             meanmatrix[algotuple[1]][ilbd,irho,idelta] = 0
-   
-  #  # Prepare matrices to show
-  #  showmats = dict()
-  #  for i,algo in zip(np.arange(nalgosN),algosN):
-  #    showmats[algo[1]]   = np.zeros(rhos.size, deltas.size)
-  #  for i,algo in zip(np.arange(nalgosL),algosL):
-  #    showmats[algo[1]]   = np.zeros(lambdas.size, rhos.size, deltas.size)
 
-    # Save
-    if dosavedata:
-      tosave = dict()
-      tosave['meanmatrix'] = meanmatrix
-      tosave['d'] = d
-      tosave['sigma'] = sigma
-      tosave['deltas'] = deltas
-      tosave['rhos'] = rhos
-      tosave['numvects'] = numvects
-      tosave['SNRdb'] = SNRdb
-      tosave['lambdas'] = lambdas
-      try:
-        scipy.io.savemat(savedataname, tosave)
-      except:
-        print "Save error"
+  # Save
+  if dosavedata:
+    tosave = dict()
+    tosave['meanmatrix'] = meanmatrix
+    tosave['d'] = d
+    tosave['sigma'] = sigma
+    tosave['deltas'] = deltas
+    tosave['rhos'] = rhos
+    tosave['numvects'] = numvects
+    tosave['SNRdb'] = SNRdb
+    tosave['lambdas'] = lambdas
+    try:
+      scipy.io.savemat(savedataname, tosave)
+    except:
+      print "Save error"
   # Show
   if doshowplot or dosaveplot:
     for algotuple in algosN:
@@ -291,7 +307,14 @@ def run_multi(algosN, algosL, d, sigma, deltas, rhos, lambdas, numvects, SNRdb,
   print "Finished."
   
 def run_once_tuple(t):
-  return run_once(*t)
+  results = run_once(*t)
+  import sys
+  currmodule = sys.modules[__name__]  
+  currmodule.proccount.value = currmodule.proccount.value + 1
+  print "================================"
+  print "Finished job",currmodule.proccount.value,"of",currmodule.njobs
+  print "================================"
+  return results
 
 def run_once(algosN,algosL,Omega,y,lambdas,realnoise,M,x0):
   
@@ -322,8 +345,8 @@ def run_once(algosN,algosL,Omega,y,lambdas,realnoise,M,x0):
       xrec[strname][:,iy] = algofunc(y[:,iy],M,Omega,epsilon)
       err[strname][iy]    = np.linalg.norm(x0[:,iy] - xrec[strname][:,iy])
       relerr[strname][iy] = err[strname][iy] / np.linalg.norm(x0[:,iy])
-  for algotuple in algosN:
-    print algotuple[1],' : avg relative error = ',np.mean(relerr[strname])  
+  for algofunc,strname in algosN:
+    print strname,' : avg relative error = ',np.mean(relerr[strname])  
 
   # Run algorithms with Lambda
   for ilbd,lbd in zip(np.arange(lambdas.size),lambdas):
@@ -337,8 +360,8 @@ def run_once(algosN,algosL,Omega,y,lambdas,realnoise,M,x0):
         err[strname][ilbd,iy]    = np.linalg.norm(x0[:,iy] - xrec[strname][ilbd,:,iy])
         relerr[strname][ilbd,iy] = err[strname][ilbd,iy] / np.linalg.norm(x0[:,iy])
     print 'Lambda = ',lbd,' :'
-    for algotuple in algosL:
-      print '   ',algotuple[1],' : avg relative error = ',np.mean(relerr[strname][ilbd,:])
+    for algofunc,strname in algosL:
+      print '   ',strname,' : avg relative error = ',np.mean(relerr[strname][ilbd,:])
 
   # Prepare results
   mrelerrN = dict()

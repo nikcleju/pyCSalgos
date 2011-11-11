@@ -302,10 +302,9 @@ def greed_omp_qr(x,A,m,opts=[]):
     #    end
     mask = np.zeros(m)
     mask[math.floor(np.random.rand() * m)] = 1
-    nP = np.linalg.norm(P(mask))
-    if abs(1-nP) > 1e-3:
-        print 'Dictionary appears not to have unit norm columns.'
-    #end
+    #nP = np.linalg.norm(P(mask))
+    #if abs(1-nP) > 1e-3:
+    #    print 'Dictionary appears not to have unit norm columns.'
     
     ###########################################################################
     #              Check if we have enough memory and initialise 
