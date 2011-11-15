@@ -157,7 +157,7 @@ def std2():
   sigma = 2.0
   deltas = np.array([0.05, 0.45, 0.95])
   rhos = np.array([0.05, 0.45, 0.95])
-  numvects = 100; # Number of vectors to generate
+  numvects = 10; # Number of vectors to generate
   SNRdb = 20.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
@@ -307,7 +307,13 @@ def run_multi(algosN, algosL, d, sigma, deltas, rhos, lambdas, numvects, SNRdb,
     tosave['numvects'] = numvects
     tosave['SNRdb'] = SNRdb
     tosave['lambdas'] = lambdas
-    tosave['algonames'] = [algotuple[1] for algotuple in algosN+algosL]
+    # Save algo names as cell array
+    obj_arr = np.zeros((len(algosN)+len(algosL),), dtype=np.object)
+    idx = 0
+    for algotuple in algosN+algosL:
+      obj_arr[idx] = algotuple[1]
+      idx = idx+1
+    tosave['algonames'] = obj_arr
     try:
       scipy.io.savemat(savedataname, tosave)
     except:
