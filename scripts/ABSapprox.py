@@ -307,6 +307,7 @@ def run_multi(algosN, algosL, d, sigma, deltas, rhos, lambdas, numvects, SNRdb,
     tosave['numvects'] = numvects
     tosave['SNRdb'] = SNRdb
     tosave['lambdas'] = lambdas
+    tosave['algonames'] = [algotuple[1] for algotuple in algosN+algosL]
     try:
       scipy.io.savemat(savedataname, tosave)
     except:
@@ -319,7 +320,7 @@ def run_multi(algosN, algosL, d, sigma, deltas, rhos, lambdas, numvects, SNRdb,
       plt.imshow(meanmatrix[algoname], cmap=cm.gray, interpolation='nearest',origin='lower')
       if dosaveplot:
         for ext in saveplotexts:
-          plt.savefig(saveplotbase + algoname + '.' + ext)
+          plt.savefig(saveplotbase + algoname + '.' + ext, bbox_inches='tight')
     for algotuple in algosL:
       algoname = algotuple[1]
       for ilbd in np.arange(lambdas.size):
@@ -327,7 +328,7 @@ def run_multi(algosN, algosL, d, sigma, deltas, rhos, lambdas, numvects, SNRdb,
         plt.imshow(meanmatrix[algoname][ilbd], cmap=cm.gray, interpolation='nearest',origin='lower')
         if dosaveplot:
           for ext in saveplotexts:
-            plt.savefig(saveplotbase + algoname + ('_lbd%.0e' % lambdas[ilbd]) + '.' + ext)
+            plt.savefig(saveplotbase + algoname + ('_lbd%.0e' % lambdas[ilbd]) + '.' + ext, bbox_inches='tight')
     if doshowplot:
       plt.show()
     
