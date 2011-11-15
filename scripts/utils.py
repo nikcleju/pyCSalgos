@@ -12,12 +12,10 @@ import matplotlib.cm as cm
 def loadshowmatrices(filename, algonames = None):
     mdict = scipy.io.loadmat(filename)
     if algonames == None:
-      algonames = ('GAP','SL0_approx')
-    else:
       algonames = mdict['algonames']
     
     for algonameobj in algonames:
-        algoname = algonames[0,0][0]
+        algoname = algonames[0][0]
         print algoname
         if mdict['meanmatrix'][algoname][0,0].ndim == 2:
             plt.figure()
