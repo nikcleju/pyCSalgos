@@ -12,6 +12,8 @@ import os
 
 import pyCSalgos
 import pyCSalgos.GAP.GAP
+import pyCSalgos.BP.l1qc
+import pyCSalgos.BP.l1qec
 import pyCSalgos.SL0.SL0_approx
 import pyCSalgos.OMP.omp_QR
 import pyCSalgos.RecomTST.RecommendedTST
@@ -26,6 +28,33 @@ def run_gap(y,M,Omega,epsilon):
                    "l2solver" : 'pseudoinverse',\
                    "noise_level": epsilon}
   return pyCSalgos.GAP.GAP.GAP(y,M,M.T,Omega,Omega.T,gapparams,np.zeros(Omega.shape[1]))[0]
+
+def run_bp_analysis(y,M,Omega,epsilon):
+  
+  N,n = Omega.shape
+  D = np.linalg.pinv(Omega)
+  U,S,Vt = np.linalg.svd(D)
+  Aeps = np.dot(M,D)
+  Aexact = Vt[-(N-n):,:]
+  # We don't ned any aggregate matrices anymore
+  
+  x0 = np.zeros(N)
+  return np.dot(D , pyCSalgos.BP.l1qec.l1qec_logbarrier(x0,Aeps,Aeps.T,y,epsilon,Aexact,Aexact.T,np.zeros(N-n)))
+
+def run_sl0_analysis(y,M,Omega,epsilon):
+  
+  N,n = Omega.shape
+  D = np.linalg.pinv(Omega)
+  U,S,Vt = np.linalg.svd(D)
+  Aeps = np.dot(M,D)
+  Aexact = Vt[-(N-n):,:]
+  # We don't ned any aggregate matrices anymore
+  
+  sigmamin = 0.001
+  sigma_decrease_factor = 0.5
+  mu_0 = 2
+  L = 10
+  return np.dot(D , pyCSalgos.SL0.SL0_approx.SL0_approx_analysis(Aeps,Aexact,y,epsilon,sigmamin,sigma_decrease_factor,mu_0,L))
 
 def run_sl0(y,M,Omega,D,U,S,Vt,epsilon,lbd):
   
@@ -42,7 +71,7 @@ def run_sl0(y,M,Omega,D,U,S,Vt,epsilon,lbd):
   mu_0 = 2
   L = 10
   return pyCSalgos.SL0.SL0_approx.SL0_approx(aggD,aggy,epsilon,sigmamin,sigma_decrease_factor,mu_0,L)
-
+  
 def run_bp(y,M,Omega,D,U,S,Vt,epsilon,lbd):
   
   N,n = Omega.shape
@@ -52,12 +81,9 @@ def run_bp(y,M,Omega,D,U,S,Vt,epsilon,lbd):
   aggDlower = Vt[-(N-n):,:]
   aggD = np.concatenate((aggDupper, lbd * aggDlower))
   aggy = np.concatenate((y, np.zeros(N-n)))
-  
-  sigmamin = 0.001
-  sigma_decrease_factor = 0.5
-  mu_0 = 2
-  L = 10
-  return pyCSalgos.SL0.SL0_approx.SL0_approx(aggD,aggy,epsilon,sigmamin,sigma_decrease_factor,mu_0,L)
+
+  x0 = np.zeros(N)
+  return pyCSalgos.BP.l1qc.l1qc_logbarrier(x0,aggD,aggD.T,aggy,epsilon)
 
 def run_ompeps(y,M,Omega,D,U,S,Vt,epsilon,lbd):
   
@@ -93,6 +119,8 @@ def run_tst(y,M,Omega,D,U,S,Vt,epsilon,lbd):
 #==========================
 gap = (run_gap, 'GAP')
 sl0 = (run_sl0, 'SL0a')
+sl0analysis = (run_sl0_analysis, 'SL0a2')
+bpanalysis = (run_bp_analysis, 'BPa2')
 bp  = (run_bp, 'BP')
 ompeps = (run_ompeps, 'OMPeps')
 tst = (run_tst, 'TST')
@@ -171,7 +199,37 @@ def std2():
   saveplotexts = ('png','pdf','eps')
 
   return algosN,algosL,d,sigma,deltas,rhos,lambdas,numvects,SNRdb,dosavedata,savedataname,\
-          doshowplot,dosaveplot,saveplotbase,saveplotexts          
+          doshowplot,dosaveplot,saveplotbase,saveplotexts    
+          
+# Standard parameters 3
+# Algorithms: GAP, SL0a and SL0a2
+# d=50, sigma = 2, delta and rho only 3 x 3, lambdas = 0, 1e-4, 1e-2, 1, 100, 10000
+# Do save data, do save plots, don't show plots
+# Useful for short testing 
+def std3():
+  # Define which algorithms to run
+  algosN = gap,sl0analysis,bpanalysis      # tuple of algorithms not depending on lambda
+  algosL = sl0,bp    # tuple of algorithms depending on lambda (our ABS approach)
+  
+  d = 50.0
+  sigma = 2.0
+  deltas = np.array([0.05, 0.45, 0.95])
+  rhos = np.array([0.05, 0.45, 0.95])
+  numvects = 10; # Number of vectors to generate
+  SNRdb = 20.;    # This is norm(signal)/norm(noise), so power, not energy
+  # Values for lambda
+  #lambdas = [0 10.^linspace(-5, 4, 10)];
+  lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
+  
+  dosavedata = True
+  savedataname = 'approx_pt_std2.mat'
+  doshowplot = False
+  dosaveplot = True
+  saveplotbase = 'approx_pt_std2_'
+  saveplotexts = ('png','pdf','eps')
+
+  return algosN,algosL,d,sigma,deltas,rhos,lambdas,numvects,SNRdb,dosavedata,savedataname,\
+          doshowplot,dosaveplot,saveplotbase,saveplotexts
   
 #==========================
 # Interface run functions
@@ -198,14 +256,15 @@ def run_multi(algosN, algosL, d, sigma, deltas, rhos, lambdas, numvects, SNRdb,
 
   print "This is analysis recovery ABS approximation script by Nic"
   print "Running phase transition ( run_multi() )"
-  
-  if doparallel:
-    import multiprocessing
-    # Shared value holding the number of finished processes
-    # Add it as global of the module
-    import sys
-    currmodule = sys.modules[__name__]
-    currmodule.proccount = multiprocessing.Value('I', 0) # 'I' = unsigned int, see docs (multiprocessing, array)
+
+  # Not only for parallel  
+  #if doparallel:
+  import multiprocessing
+  # Shared value holding the number of finished processes
+  # Add it as global of the module
+  import sys
+  currmodule = sys.modules[__name__]
+  currmodule.proccount = multiprocessing.Value('I', 0) # 'I' = unsigned int, see docs (multiprocessing, array)
     
   if dosaveplot or doshowplot:
     try:
@@ -266,8 +325,9 @@ def run_multi(algosN, algosL, d, sigma, deltas, rhos, lambdas, numvects, SNRdb,
       print "    delta = ",delta," rho = ",rho
       jobparams.append((algosN,algosL, Omega,y,lambdas,realnoise,M,x0))
   
-  if doparallel:
-    currmodule.njobs = deltas.size * rhos.size  
+  # Not only for parallel
+  #if doparallel:
+  currmodule.njobs = deltas.size * rhos.size  
   print "End of parameters"
   
   # Run
@@ -278,7 +338,7 @@ def run_multi(algosN, algosL, d, sigma, deltas, rhos, lambdas, numvects, SNRdb,
     jobresults = pool.map(run_once_tuple, jobparams)
   else:
     for jobparam in jobparams:
-      jobresults.append(run_once(algosN,algosL,Omega,y,lambdas,realnoise,M,x0))
+      jobresults.append(run_once_tuple(jobparam))
 
   # Read results
   idx = 0
@@ -357,6 +417,7 @@ def run_once(algosN,algosL,Omega,y,lambdas,realnoise,M,x0):
   nalgosN = len(algosN)  
   nalgosL = len(algosL)
   
+  
   xrec = dict()
   err = dict()
   relerr = dict()
@@ -376,7 +437,10 @@ def run_once(algosN,algosL,Omega,y,lambdas,realnoise,M,x0):
   for iy in np.arange(y.shape[1]):
     for algofunc,strname in algosN:
       epsilon = 1.1 * np.linalg.norm(realnoise[:,iy])
-      xrec[strname][:,iy] = algofunc(y[:,iy],M,Omega,epsilon)
+      try:
+        xrec[strname][:,iy] = algofunc(y[:,iy],M,Omega,epsilon)
+      except pyCSalgos.BP.l1qec.l1qecInputValueError as e:
+        print "Caught exception when running algorithm",strname," :",e.message
       err[strname][iy]    = np.linalg.norm(x0[:,iy] - xrec[strname][:,iy])
       relerr[strname][iy] = err[strname][iy] / np.linalg.norm(x0[:,iy])
   for algofunc,strname in algosN:
@@ -389,7 +453,10 @@ def run_once(algosN,algosL,Omega,y,lambdas,realnoise,M,x0):
       U,S,Vt = np.linalg.svd(D)
       for algofunc,strname in algosL:
         epsilon = 1.1 * np.linalg.norm(realnoise[:,iy])
-        gamma = algofunc(y[:,iy],M,Omega,D,U,S,Vt,epsilon,lbd)
+        try:
+          gamma = algofunc(y[:,iy],M,Omega,D,U,S,Vt,epsilon,lbd)
+        except pyCSalgos.BP.l1qc.l1qcInputValueError as e:
+          print "Caught exception when running algorithm",strname," :",e.message
         xrec[strname][ilbd,:,iy] = np.dot(D,gamma)
         err[strname][ilbd,iy]    = np.linalg.norm(x0[:,iy] - xrec[strname][ilbd,:,iy])
         relerr[strname][ilbd,iy] = err[strname][ilbd,iy] / np.linalg.norm(x0[:,iy])
@@ -432,4 +499,4 @@ def generateData(d,sigma,delta,rho,numvects,SNRdb):
 if __name__ == "__main__":
   #import cProfile
   #cProfile.run('mainrun()', 'profile')    
-  run()
+  run(std3)

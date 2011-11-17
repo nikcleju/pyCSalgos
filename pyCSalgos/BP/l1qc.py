@@ -3,6 +3,8 @@ import numpy as np
 import scipy.linalg
 import math
 
+class l1qcInputValueError(Exception):
+  pass
 
 #function [x, res, iter] = cgsolve(A, b, tol, maxiter, verbose)
 def cgsolve(A, b, tol, maxiter, verbose=1):
@@ -155,7 +157,7 @@ def cgsolve(A, b, tol, maxiter, verbose=1):
 
 
 #function [xp, up, niter] = l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol, cgmaxiter) 
-def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol, cgmaxiter):
+def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol, cgmaxiter, verbose=False):
     # Newton algorithm for log-barrier subproblems for l1 minimization
     # with quadratic constraints.
     #
@@ -364,7 +366,8 @@ def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol,
         h11pfun = lambda z: sigx*z - (1.0/fe)*At(A(z)) + 1.0/(fe**2)*np.dot(np.dot(atr.T,z),atr)
         dx,cgres,cgiter = cgsolve(h11pfun, w1p, cgtol, cgmaxiter, 0)
         if (cgres > 1.0/2):
-          print 'Cannot solve system.  Returning previous iterate.  (See Section 4 of notes for more information.)'
+          if verbose:
+            print 'Cannot solve system.  Returning previous iterate.  (See Section 4 of notes for more information.)'
           xp = x.copy()
           up = u.copy()
           return xp,up,niter
@@ -386,12 +389,14 @@ def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol,
             #dx = np.linalg.solve(H11p, w1p)
             hcond = 1.0/np.linalg.cond(H11p)
         except scipy.linalg.LinAlgError:
-            print 'Matrix ill-conditioned.  Returning previous iterate.  (See Section 4 of notes for more information.)'
+            if verbose:
+              print 'Matrix ill-conditioned.  Returning previous iterate.  (See Section 4 of notes for more information.)'
             xp = x.copy()
             up = u.copy()
             return xp,up,niter
         if hcond < 1e-14:
-            print 'Matrix ill-conditioned.  Returning previous iterate.  (See Section 4 of notes for more information.)'
+            if verbose:
+              print 'Matrix ill-conditioned.  Returning previous iterate.  (See Section 4 of notes for more information.)'
             xp = x.copy()
             up = u.copy()
             return xp,up,niter
@@ -443,7 +448,8 @@ def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol,
         s = beta*s
         backiter = backiter + 1
         if (backiter > 32):
-          print 'Stuck on backtracking line search, returning previous iterate.  (See Section 4 of notes for more information.)'
+          if verbose:
+            print 'Stuck on backtracking line search, returning previous iterate.  (See Section 4 of notes for more information.)'
           xp = x.copy()
           up = u.copy()
           return xp,up,niter
@@ -473,19 +479,21 @@ def l1qc_newton(x0, u0, A, At, b, epsilon, tau, newtontol, newtonmaxiter, cgtol,
           done = 0
       
       #disp(sprintf('Newton iter = #d, Functional = #8.3f, Newton decrement = #8.3f, Stepsize = #8.3e', ...
-      print 'Newton iter = ',niter,', Functional = ',f,', Newton decrement = ',lambda2/2.0,', Stepsize = ',stepsize
+      if verbose:
+        print 'Newton iter = ',niter,', Functional = ',f,', Newton decrement = ',lambda2/2.0,', Stepsize = ',stepsize
 
-      if largescale:
-        print '                CG Res = ',cgres,', CG Iter = ',cgiter
-      else:
-        print '                  H11p condition number = ',hcond
+      if verbose:
+        if largescale:
+          print '                CG Res = ',cgres,', CG Iter = ',cgiter
+        else:
+          print '                  H11p condition number = ',hcond
       #end
           
     #end
     return xp,up,niter
 
 #function xp = l1qc_logbarrier(x0, A, At, b, epsilon, lbtol, mu, cgtol, cgmaxiter)
-def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxiter=200):
+def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxiter=200, verbose=False):
     # Solve quadratically constrained l1 minimization:
     # min ||x||_1   s.t.  ||Ax - b||_2 <= \epsilon
     #
@@ -609,6 +617,10 @@ def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxi
     # End of original Matab code
     #----------------------------
     
+    # Check if epsilon > 0. If epsilon is 0, the algorithm fails. You should run the algo with equality constraint instead  
+    if epsilon == 0:
+      raise l1qcInputValueError('Epsilon should be > 0!')       
+    
     #largescale = isa(A,'function_handle');
     if hasattr(A, '__call__'):
         largescale = True
@@ -630,13 +642,15 @@ def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxi
     # starting point --- make sure that it is feasible
     if largescale:
       if np.linalg.norm(A(x0) - b) > epsilon:
-        print 'Starting point infeasible; using x0 = At*inv(AAt)*y.'
+        if verbose:
+          print 'Starting point infeasible; using x0 = At*inv(AAt)*y.'
         #AAt = @(z) A(At(z));
         AAt = lambda z: A(At(z))
         # TODO: implement cgsolve
         w,cgres,cgiter = cgsolve(AAt, b, cgtol, cgmaxiter, 0)
         if (cgres > 1.0/2):
-          print 'A*At is ill-conditioned: cannot find starting point'
+          if verbose:
+            print 'A*At is ill-conditioned: cannot find starting point'
           xp = x0.copy()
           return xp
         #end
@@ -644,7 +658,8 @@ def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxi
       #end
     else:
       if np.linalg.norm( np.dot(A,x0) - b ) > epsilon:
-        print 'Starting point infeasible; using x0 = At*inv(AAt)*y.'
+        if verbose:
+          print 'Starting point infeasible; using x0 = At*inv(AAt)*y.'
         #opts.POSDEF = true; opts.SYM = true;
         #[w, hcond] = linsolve(A*A', b, opts);
         #if (hcond < 1e-14)
@@ -655,13 +670,15 @@ def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxi
         try:
             w = scipy.linalg.solve(np.dot(A,A.T), b, sym_pos=True)
             #w = np.linalg.solve(np.dot(A,A.T), b)
-            hcond = 1.0/scipy.linalg.cond(np.dot(A,A.T))
+            hcond = 1.0/np.linalg.cond(np.dot(A,A.T))
         except scipy.linalg.LinAlgError:
-            print 'A*At is ill-conditioned: cannot find starting point'
+            if verbose:
+              print 'A*At is ill-conditioned: cannot find starting point'
             xp = x0.copy()
             return xp
         if hcond < 1e-14:
-            print 'A*At is ill-conditioned: cannot find starting point'
+            if verbose:
+              print 'A*At is ill-conditioned: cannot find starting point'
             xp = x0.copy()
             return xp           
         #x0 = A'*w;
@@ -672,7 +689,8 @@ def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxi
     u = (0.95)*np.abs(x0) + (0.10)*np.abs(x0).max()
     
     #disp(sprintf('Original l1 norm = #.3f, original functional = #.3f', sum(abs(x0)), sum(u)));
-    print 'Original l1 norm = ',np.abs(x0).sum(),'original functional = ',u.sum()
+    if verbose:
+      print 'Original l1 norm = ',np.abs(x0).sum(),'original functional = ',u.sum()
     
     # choose initial value of tau so that the duality gap after the first
     # step will be about the origial norm
@@ -680,7 +698,8 @@ def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxi
                                                                                                                               
     lbiter = math.ceil((math.log(2*N+1)-math.log(lbtol)-math.log(tau))/math.log(mu))
     #disp(sprintf('Number of log barrier iterations = #d\n', lbiter));
-    print 'Number of log barrier iterations = ',lbiter
+    if verbose:
+      print 'Number of log barrier iterations = ',lbiter
     
     totaliter = 0
     
@@ -697,7 +716,8 @@ def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxi
       
       #disp(sprintf('\nLog barrier iter = #d, l1 = #.3f, functional = #8.3f, tau = #8.3e, total newton iter = #d\n', ...
       #  ii, sum(abs(xp)), sum(up), tau, totaliter));
-      print 'Log barrier iter = ',ii,', l1 = ',np.abs(xp).sum(),', functional = ',up.sum(),', tau = ',tau,', total newton iter = ',totaliter
+      if verbose:
+        print 'Log barrier iter = ',ii,', l1 = ',np.abs(xp).sum(),', functional = ',up.sum(),', tau = ',tau,', total newton iter = ',totaliter
       x = xp.copy()
       u = up.copy()
      
