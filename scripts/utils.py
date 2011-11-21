@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 # Sample call
-utils.loadshowmatrices_multipixels('H:\\CS\\Python\\Results\\pt_std1\\approx_pt_std1.mat', dosave=True, saveplotbase='approx_pt_std1_',saveplotexts=('png','eps','pdf'))
+#utils.loadshowmatrices_multipixels('H:\\CS\\Python\\Results\\pt_std1\\approx_pt_std1.mat', dosave=True, saveplotbase='approx_pt_std1_',saveplotexts=('png','eps','pdf'))
 
 #def loadshowmatrices(filename, algonames = None):
 #    mdict = scipy.io.loadmat(filename)
@@ -111,10 +111,10 @@ def loadshowmatrices_multipixels(filename, algonames = None, doshow=True, dosave
     if algonames == None:
       algonames = mdict['algonames']
     
-    thresh = 0.90
+#    thresh = 0.90
     N = 10
-    border = 2
-    bordercolor = 0 # black
+#    border = 2
+#    bordercolor = 0 # black
     
     for algonameobj in algonames:
         algoname = algonameobj[0][0]
@@ -127,20 +127,22 @@ def loadshowmatrices_multipixels(filename, algonames = None, doshow=True, dosave
             for i in numpy.arange(rows):
               for j in numpy.arange(cols):
                 bigmatrix[i*N:i*N+N,j*N:j*N+N] = mdict['meanmatrix'][algoname][0,0][i,j]
-                # Mark 95% border
-                if mdict['meanmatrix'][algoname][0,0][i,j] > thresh:
-                  # Top border
-                  if mdict['meanmatrix'][algoname][0,0][i-1,j] < thresh and i>0:
-                    bigmatrix[i*N:i*N+border,j*N:j*N+N] = bordercolor
-                  # Bottom border
-                  if mdict['meanmatrix'][algoname][0,0][i+1,j] < thresh and i<rows-1:
-                    bigmatrix[i*N+N-border:i*N+N,j*N:j*N+N] = bordercolor                
-                  # Left border
-                  if mdict['meanmatrix'][algoname][0,0][i,j-1] < thresh and j>0:
-                    bigmatrix[i*N:i*N+N,j*N:j*N+border] = bordercolor
-                  # Right border (not very probable)
-                  if j<cols-1 and mdict['meanmatrix'][algoname][0,0][i,j+1] < thresh:
-                    bigmatrix[i*N:i*N+N,j*N+N-border:j*N+N] = bordercolor
+            bigmatrix = int_drawseparation(mdict['meanmatrix'][algoname][0,0],bigmatrix,10,0.9,2,0)
+            bigmatrix = int_drawseparation(mdict['meanmatrix'][algoname][0,0],bigmatrix,10,0.8,2,0.5)
+#                # Mark 95% border
+#                if mdict['meanmatrix'][algoname][0,0][i,j] > thresh:
+#                  # Top border
+#                  if mdict['meanmatrix'][algoname][0,0][i-1,j] < thresh and i>0:
+#                    bigmatrix[i*N:i*N+border,j*N:j*N+N] = bordercolor
+#                  # Bottom border
+#                  if mdict['meanmatrix'][algoname][0,0][i+1,j] < thresh and i<rows-1:
+#                    bigmatrix[i*N+N-border:i*N+N,j*N:j*N+N] = bordercolor                
+#                  # Left border
+#                  if mdict['meanmatrix'][algoname][0,0][i,j-1] < thresh and j>0:
+#                    bigmatrix[i*N:i*N+N,j*N:j*N+border] = bordercolor
+#                  # Right border (not very probable)
+#                  if j<cols-1 and mdict['meanmatrix'][algoname][0,0][i,j+1] < thresh:
+#                    bigmatrix[i*N:i*N+N,j*N+N-border:j*N+N] = bordercolor
                     
             plt.figure()
             #plt.imshow(mdict['meanmatrix'][algoname][0,0], cmap=cm.gray, interpolation='nearest',origin='lower')            
@@ -160,21 +162,23 @@ def loadshowmatrices_multipixels(filename, algonames = None, doshow=True, dosave
                 for i in numpy.arange(rows):
                   for j in numpy.arange(cols):
                     bigmatrix[i*N:i*N+N,j*N:j*N+N] = matrix[i,j]
-                    # Mark 95% border
-                    if matrix[i,j] > thresh:
-                      # Top border
-                      if matrix[i-1,j] < thresh and i>0:
-                        bigmatrix[i*N:i*N+border,j*N:j*N+N] = bordercolor
-                      # Bottom border
-                      if matrix[i+1,j] < thresh and i<rows-1:
-                        bigmatrix[i*N+N-border:i*N+N,j*N:j*N+N] = bordercolor                
-                      # Left border
-                      if matrix[i,j-1] < thresh and j>0:
-                        bigmatrix[i*N:i*N+N,j*N:j*N+border] = bordercolor
-                      # Right border (not very probable)
-                      if j<cols-1 and matrix[i,j+1] < thresh:
-                        bigmatrix[i*N:i*N+N,j*N+N-border:j*N+N] = bordercolor
-                        
+                bigmatrix = int_drawseparation(matrix,bigmatrix,10,0.9,2,0)
+                bigmatrix = int_drawseparation(matrix,bigmatrix,10,0.8,2,0.5)
+#                    # Mark 95% border
+#                    if matrix[i,j] > thresh:
+#                      # Top border
+#                      if matrix[i-1,j] < thresh and i>0:
+#                        bigmatrix[i*N:i*N+border,j*N:j*N+N] = bordercolor
+#                      # Bottom border
+#                      if matrix[i+1,j] < thresh and i<rows-1:
+#                        bigmatrix[i*N+N-border:i*N+N,j*N:j*N+N] = bordercolor                
+#                      # Left border
+#                      if matrix[i,j-1] < thresh and j>0:
+#                        bigmatrix[i*N:i*N+N,j*N:j*N+border] = bordercolor
+#                      # Right border (not very probable)
+#                      if j<cols-1 and matrix[i,j+1] < thresh:
+#                        bigmatrix[i*N:i*N+N,j*N+N-border:j*N+N] = bordercolor
+                
                 plt.figure()
                 #plt.imshow(matrix, cmap=cm.gray, interpolation='nearest',origin='lower')
                 plt.imshow(bigmatrix, cmap=cm.gray, interpolation='nearest',origin='lower')
@@ -198,3 +202,25 @@ def appendtomatfile(filename, toappend, toappendname):
   #  >>> obj_arr = np.zeros((2,), dtype=np.object)
   #  >>> obj_arr[0] = 1
   #  >>> obj_arr[1] = 'a string'    
+  
+def int_drawseparation(matrix,bigmatrix,N,thresh,border,bordercolor):
+  rows,cols = matrix.shape
+  for i in numpy.arange(rows):
+    for j in numpy.arange(cols):
+      # Mark border
+      # Use top-left corner of current square for reference
+      if matrix[i,j] > thresh:
+        # Top border
+        if matrix[i-1,j] < thresh and i>0:
+          bigmatrix[i*N:i*N+border,j*N:j*N+N] = bordercolor
+        # Bottom border
+        if i<rows-1 and matrix[i+1,j] < thresh:
+          bigmatrix[i*N+N-border:i*N+N,j*N:j*N+N] = bordercolor                
+        # Left border
+        if matrix[i,j-1] < thresh and j>0:
+          bigmatrix[i*N:i*N+N,j*N:j*N+border] = bordercolor
+        # Right border (not very probable)
+        if j<cols-1 and matrix[i,j+1] < thresh:
+          bigmatrix[i*N:i*N+N,j*N+N-border:j*N+N] = bordercolor  
+  
+  return bigmatrix
