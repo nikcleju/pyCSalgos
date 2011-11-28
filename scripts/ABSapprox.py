@@ -252,10 +252,10 @@ def std3():
   lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
   
   dosavedata = True
-  savedataname = 'approx_pt_std1.mat'
+  savedataname = 'approx_pt_std3.mat'
   doshowplot = False
   dosaveplot = True
-  saveplotbase = 'approx_pt_std1_'
+  saveplotbase = 'approx_pt_std3_'
   saveplotexts = ('png','pdf','eps')
 
   return algosN,algosL,d,sigma,deltas,rhos,lambdas,numvects,SNRdb,dosavedata,savedataname,\
@@ -282,10 +282,10 @@ def std4():
   lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
   
   dosavedata = True
-  savedataname = 'approx_pt_std2.mat'
+  savedataname = 'approx_pt_std4.mat'
   doshowplot = False
   dosaveplot = True
-  saveplotbase = 'approx_pt_std2_'
+  saveplotbase = 'approx_pt_std4_'
   saveplotexts = ('png','pdf','eps')
 
   return algosN,algosL,d,sigma,deltas,rhos,lambdas,numvects,SNRdb,dosavedata,savedataname,\
