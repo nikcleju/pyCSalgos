@@ -230,6 +230,67 @@ def std2():
   return algosN,algosL,d,sigma,deltas,rhos,lambdas,numvects,SNRdb,dosavedata,savedataname,\
           doshowplot,dosaveplot,saveplotbase,saveplotexts
   
+  
+  # Standard parameters 3
+# All algorithms, 100 vectors
+# d=50, sigma = 2, delta and rho full resolution (0.05 step), lambdas = 0, 1e-4, 1e-2, 1, 100, 10000
+# Do save data, do save plots, don't show plots
+# IDENTICAL with 1 but with 10dB SNR noise
+def std3():
+  # Define which algorithms to run
+  algosN = gap,sl0analysis,bpanalysis               # tuple of algorithms not depending on lambda
+  algosL = sl0,bp,ompeps,tst    # tuple of algorithms depending on lambda (our ABS approach)
+  
+  d = 50.0;
+  sigma = 2.0
+  deltas = np.arange(0.05,1.,0.05)
+  rhos = np.arange(0.05,1.,0.05)
+  numvects = 100; # Number of vectors to generate
+  SNRdb = 10.;    # This is norm(signal)/norm(noise), so power, not energy
+  # Values for lambda
+  #lambdas = [0 10.^linspace(-5, 4, 10)];
+  lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
+  
+  dosavedata = True
+  savedataname = 'approx_pt_std1.mat'
+  doshowplot = False
+  dosaveplot = True
+  saveplotbase = 'approx_pt_std1_'
+  saveplotexts = ('png','pdf','eps')
+
+  return algosN,algosL,d,sigma,deltas,rhos,lambdas,numvects,SNRdb,dosavedata,savedataname,\
+          doshowplot,dosaveplot,saveplotbase,saveplotexts
+          
+# Standard parameters 4
+# All algorithms, 100 vectors
+# d=20, sigma = 10, delta and rho full resolution (0.05 step), lambdas = 0, 1e-4, 1e-2, 1, 100, 10000
+# Do save data, do save plots, don't show plots
+# Identical to 2 but with 10dB SNR noise
+def std4():
+  # Define which algorithms to run
+  algosN = gap,sl0analysis,bpanalysis      # tuple of algorithms not depending on lambda
+  algosL = sl0,bp,ompeps,tst    # tuple of algorithms depending on lambda (our ABS approach)
+  
+  d = 20.0
+  sigma = 10.0
+  deltas = np.arange(0.05,1.,0.05)
+  rhos = np.arange(0.05,1.,0.05)
+  numvects = 100; # Number of vectors to generate
+  SNRdb = 10.;    # This is norm(signal)/norm(noise), so power, not energy
+  # Values for lambda
+  #lambdas = [0 10.^linspace(-5, 4, 10)];
+  lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
+  
+  dosavedata = True
+  savedataname = 'approx_pt_std2.mat'
+  doshowplot = False
+  dosaveplot = True
+  saveplotbase = 'approx_pt_std2_'
+  saveplotexts = ('png','pdf','eps')
+
+  return algosN,algosL,d,sigma,deltas,rhos,lambdas,numvects,SNRdb,dosavedata,savedataname,\
+          doshowplot,dosaveplot,saveplotbase,saveplotexts
+          
 #==========================
 # Interface run functions
 #==========================
