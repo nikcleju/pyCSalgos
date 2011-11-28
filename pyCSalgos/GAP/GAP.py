@@ -119,10 +119,15 @@ def Generate_Data_Known_Omega(Omega, d,p,m,k,noiselevel, numvectors, normstr):
     y[:,i]  = numpy.dot(M, x0[:,i])
 
     # Add noise
-    t_norm = numpy.linalg.norm(y[:,i],2);
-    n = numpy.squeeze(rng.randn(m, 1));
-    y[:,i] = y[:,i] + noiselevel * t_norm * n / numpy.linalg.norm(n, 2);
-    realnoise[:,i] = noiselevel * t_norm * n / numpy.linalg.norm(n, 2)
+    t_norm = numpy.linalg.norm(y[:,i],2)
+    n = numpy.squeeze(rng.randn(m, 1))
+    # In case n i just a number, nuit an array, norm() fails
+    if n.ndim == 0:
+      nnorm = abs(n)
+    else:
+      nnorm = numpy.linalg.norm(n, 2);
+    y[:,i] = y[:,i] + noiselevel * t_norm * n / nnorm
+    realnoise[:,i] = noiselevel * t_norm * n / nnorm
   #end
 
   return x0,y,M,LambdaMat,realnoise
