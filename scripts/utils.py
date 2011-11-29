@@ -129,7 +129,8 @@ def loadshowmatrices_multipixels(filename, algonames = None, doshow=True, dosave
               for j in numpy.arange(cols):
                 bigmatrix[i*N:i*N+N,j*N:j*N+N] = mdict['meanmatrix'][algoname][0,0][i,j]
             bigmatrix = int_drawseparation(mdict['meanmatrix'][algoname][0,0],bigmatrix,10,0.9,2,0)
-            bigmatrix = int_drawseparation(mdict['meanmatrix'][algoname][0,0],bigmatrix,10,0.8,2,0.5)
+            bigmatrix = int_drawseparation(mdict['meanmatrix'][algoname][0,0],bigmatrix,10,0.8,2,0.2)
+            bigmatrix = int_drawseparation(mdict['meanmatrix'][algoname][0,0],bigmatrix,10,0.5,2,1)
 #                # Mark 95% border
 #                if mdict['meanmatrix'][algoname][0,0][i,j] > thresh:
 #                  # Top border
@@ -164,8 +165,8 @@ def loadshowmatrices_multipixels(filename, algonames = None, doshow=True, dosave
                   for j in numpy.arange(cols):
                     bigmatrix[i*N:i*N+N,j*N:j*N+N] = matrix[i,j]
                 bigmatrix = int_drawseparation(matrix,bigmatrix,10,0.9,2,0)
-                bigmatrix = int_drawseparation(matrix,bigmatrix,10,0.8,2,0.5)
-                bigmatrix = int_drawseparation(matrix,bigmatrix,10,0.5,2,0.7)
+                bigmatrix = int_drawseparation(matrix,bigmatrix,10,0.8,2,0.2)
+                bigmatrix = int_drawseparation(matrix,bigmatrix,10,0.5,2,1)
 #                    # Mark 95% border
 #                    if matrix[i,j] > thresh:
 #                      # Top border

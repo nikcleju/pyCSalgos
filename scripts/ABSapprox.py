@@ -152,10 +152,13 @@ def stdtest():
   
   d = 50.0
   sigma = 2.0
-  deltas = np.array([0.05, 0.45, 0.95])
-  rhos = np.array([0.05, 0.45, 0.95])
+  #deltas = np.array([0.05, 0.45, 0.95])
+  #rhos = np.array([0.05, 0.45, 0.95])
+  #deltas = np.array([0.95])
+  deltas = np.arange(0.05,1.,0.05)
+  rhos = np.array([0.05])
   numvects = 10; # Number of vectors to generate
-  SNRdb = 20.;    # This is norm(signal)/norm(noise), so power, not energy
+  SNRdb = 7.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
   lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
@@ -555,8 +558,35 @@ def generateData(d,sigma,delta,rho,numvects,SNRdb):
   
   return Omega,x0,y,M,realnoise
   
+def runsingleexampledebug():
+  d = 50.0;
+  sigma = 2.0
+  delta = 0.9
+  rho = 0.05
+  numvects = 20; # Number of vectors to generate
+  SNRdb = 7.;    # This is norm(signal)/norm(noise), so power, not energy
+  lbd = 10000
+  
+  Omega,x0,y,M,realnoise = generateData(d,sigma,delta,rho,numvects,SNRdb)
+  D = np.linalg.pinv(Omega)
+  U,S,Vt = np.linalg.svd(D)
+ 
+  xrec   = np.zeros((d, y.shape[1]))
+  err    = np.zeros((y.shape[1]))
+  relerr = np.zeros((y.shape[1]))  
+ 
+  for iy in np.arange(y.shape[1]):
+    epsilon = 1.1 * np.linalg.norm(realnoise[:,iy])
+    gamma = run_sl0(y[:,iy],M,Omega,D,U,S,Vt,epsilon,lbd)
+    xrec[:,iy] = np.dot(D,gamma)
+    err[iy]    = np.linalg.norm(x0[:,iy] - xrec[:,iy])
+    relerr[iy] = err[iy] / np.linalg.norm(x0[:,iy])    
+  
+  print "Finished runsingleexampledebug()"
+  
 # Script main
 if __name__ == "__main__":
   #import cProfile
   #cProfile.run('mainrun()', 'profile')    
-  run(std3)
+  run(stdtest)
+  #runsingleexampledebug()
