@@ -9,6 +9,7 @@ import numpy
 import scipy.io
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 
 # Sample call
 #utils.loadshowmatrices_multipixels('H:\\CS\\Python\\Results\\pt_std1\\approx_pt_std1.mat', dosave=True, saveplotbase='approx_pt_std1_',saveplotexts=('png','eps','pdf'))
@@ -77,7 +78,7 @@ def loadmatrices(filename, algonames=None, doshow=True, dosave=False, saveplotba
         print algoname
         if mdict['meanmatrix'][algoname][0,0].ndim == 2:
             plt.figure()
-            plt.imshow(mdict['meanmatrix'][algoname][0,0], cmap=cm.gray, interpolation='nearest',origin='lower')
+            plt.imshow(mdict['meanmatrix'][algoname][0,0], cmap=cm.gray, norm=mcolors.Normalize(0,1), interpolation='nearest',origin='lower')
             if dosave:
               for ext in saveplotexts:
                 plt.savefig(saveplotbase + algoname + '.' + ext, bbox_inches='tight')
@@ -86,7 +87,7 @@ def loadmatrices(filename, algonames=None, doshow=True, dosave=False, saveplotba
               ilbd = 0
             for matrix in mdict['meanmatrix'][algoname][0,0]:
                 plt.figure()
-                plt.imshow(matrix, cmap=cm.gray, interpolation='nearest',origin='lower')
+                plt.imshow(matrix, cmap=cm.gray, norm=mcolors.Normalize(0,1), interpolation='nearest',origin='lower')
                 if dosave:
                   for ext in saveplotexts:
                     plt.savefig(saveplotbase + algoname + ('_lbd%.0e' % lambdas[ilbd]) + '.' + ext, bbox_inches='tight')
@@ -164,6 +165,7 @@ def loadshowmatrices_multipixels(filename, algonames = None, doshow=True, dosave
                     bigmatrix[i*N:i*N+N,j*N:j*N+N] = matrix[i,j]
                 bigmatrix = int_drawseparation(matrix,bigmatrix,10,0.9,2,0)
                 bigmatrix = int_drawseparation(matrix,bigmatrix,10,0.8,2,0.5)
+                bigmatrix = int_drawseparation(matrix,bigmatrix,10,0.5,2,0.7)
 #                    # Mark 95% border
 #                    if matrix[i,j] > thresh:
 #                      # Top border
