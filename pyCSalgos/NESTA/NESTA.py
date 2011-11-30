@@ -302,7 +302,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
   #[U,U_userSet] = setOpts('U', @(x) x );
   opts,U,U_userSet = setOpts(opts,'U', lambda x: x );
   #if ~isa(U,'function_handle')
-  if hasattr(U, '__call__'):
+  if not hasattr(U, '__call__'):
       opts,Ut,userSet = setOpts(opts,'Ut',None)
   else:
       opts,Ut,userSet = setOpts(opts,'Ut', lambda x: x )
@@ -311,8 +311,8 @@ def NESTA(A,At,b,muf,delta,opts=None):
   opts,normU,userSet = setOpts(opts,'normU',None);  # so we can tell if it's been set
   
   #residuals = []; outputData = [];
-  residuals = numpy.array([])
-  outputData = numpy.array([])
+  residuals = numpy.zeros((0,2))
+  outputData = numpy.zeros(0)
   opts,AAtinv,userSet = setOpts(opts,'AAtinv',None);
   opts,USV,userSet = setOpts(opts,'USV',None);
   #if ~isempty(USV)
@@ -428,7 +428,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
   if U_userSet and normU is None:
       # simple case: U*U' = I or U'*U = I, in which case norm(U) = 1
       #z = randn(size(xplug));
-      z = numpy.random.randn(xplug.shape)
+      z = numpy.random.standard_normal(xplug.shape)
       #if isa(U,'function_handle'), UtUz = Ut(U(z)); else UtUz = U'*(U*z); end
       if hasattr(U,'__call__'):
         UtUz = Ut(U(z))
@@ -438,7 +438,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
       if numpy.linalg.norm( UtUz - z )/numpy.linalg.norm(z) < 1e-8:
           normU = 1;
       else:
-          z = numpy.random.randn(Ux_ref.shape)
+          z = numpy.random.standard_normal(Ux_ref.shape)
           #if isa(U,'function_handle'):
           if hasattr(U,'__call__'):
               UUtz = U(Ut(z)); 
@@ -483,7 +483,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
                       #printf('Warning: calculation of norm(U) may be slow\n');
                       print 'Warning: calculation of norm(U) may be slow'
                   #end
-                  normU = math.sqrt( numpy.linalg.norm(UU) );
+                  normU = math.sqrt( numpy.linalg.norm(UU, 2) );
               #end
           #end
       #end
@@ -516,9 +516,10 @@ def NESTA(A,At,b,muf,delta,opts=None):
       niter = niter_int + niter;
       
       #residuals = [residuals; res];
-      residuals = numpy.hstack((residuals,res))
+      residuals = numpy.vstack((residuals,res))
       #outputData = [outputData; out];
-      outputData = numpy.hstack((outputData, out))
+      if out is not None:
+        outputData = numpy.vstack((outputData, out))
   
   #end
   opts = optsOut.copy()
@@ -544,7 +545,8 @@ def setOpts(opts,field,default,mn=None,mx=None):
                 #opts.(field) = opts.(names{i});
                 opts[field] = opts[key]
                 #opts = rmfield(opts,names{i});
-                del opts[key]
+                # Don't delete because it is copied by reference!
+                #del opts[key]
                 break
             #end
         #end
@@ -1083,7 +1085,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
   opts,stopTest,userSet = setOpts(opts,'stopTest',1,1,2);
   opts,U,userSet = setOpts(opts,'U',lambda x: x );
   #if ~isa(U,'function_handle')
-  if hasattr(U,'__call__'):
+  if not hasattr(U,'__call__'):
       opts,Ut,userSet = setOpts(opts,'Ut',None);
   else:
       opts,Ut,userSet = setOpts(opts,'Ut', lambda x: x );
@@ -1115,6 +1117,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
       #else s = diag(S); end
       if S.ndim is 1:
         s = S
+        S = numpy.diag(s)
       else:
         s = numpy.diag(S)
         
@@ -1248,7 +1251,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
       residuals[k,1] = fx
       #--- if user has supplied a function, apply it to the iterate
       if RECORD_DATA:
-          outputData[k+1,:] = outFcn(xk);
+          outputData[k,:] = outFcn(xk);
       #end
       
       if delta > 0:
@@ -1270,7 +1273,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
                   yk = xk + dfp;
                   Ayk = Axk + Adfp;
               else:
-                  lambdaY_old = lambdaY.copy();
+                  lambdaY_old = lambdaY;
                   #[projection,projIter,lambdaY] = fastProjection(Q,S,V,dfp,bp,deltap, .999*lambdaY_old );
                   projection,projIter,lambdaY = fastProjection(Q,S,V,dfp,bp,deltap, .999*lambdaY_old )
                   #if lambdaY > 0, disp('lambda is positive!'); keyboard; end
@@ -1306,7 +1309,11 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
   #     end
       
       #--- Stopping criterion
-      qp = abs(fx - numpy.mean(fmean))/numpy.mean(fmean);
+      
+      if fmean.size == 1:
+        qp = numpy.inf
+      else:
+        qp = abs(fx - numpy.mean(fmean))/numpy.mean(fmean);
       
       #switch stopTest
       #    case 1
@@ -1335,7 +1342,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
     
       apk = 0.5*(k+1);
       Ak = Ak + apk; 
-      tauk = 2/(k+3); 
+      tauk = 2.0/(k+3); 
       
       wk =  apk*df + wk;
       
@@ -1423,9 +1430,9 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
       
       #--- display progress if desired
       #if ~mod(k+1,Verbose )
-      if not numpy.mod(k+1,Verbose):
+      if Verbose and not numpy.mod(k+1,Verbose):
           #printf('Iter: #3d  ~ fmu: #.3e ~ Rel. Variation of fmu: #.2e ~ Residual: #.2e',k+1,fx,qp,residuals(k+1,1) ); 
-          print 'Iter: ',k+1,'  ~ fmu: ',fx,' ~ Rel. Variation of fmu: ',qp,' ~ Residual:',residuals[k+1,0]
+          print 'Iter: ',k+1,'  ~ fmu: ',fx,' ~ Rel. Variation of fmu: ',qp,' ~ Residual:',residuals[k,0]
           #--- if user has supplied a function to calculate the error,
           # apply it to the current iterate and dislay the output:
           #if DISPLAY_ERROR, printf(' ~ Error: #.2e',errFcn(xk)); end
@@ -1465,7 +1472,7 @@ def Perform_L1_Constraint(xk,mu,U,Ut):
     fx = uk.copy()
 
     #uk = uk./max(mu,abs(uk));
-    uk = uk / max(mu,abs(uk))
+    uk = uk / numpy.maximum(mu,abs(uk))
     #val = real(uk'*fx);
     val = numpy.real(numpy.vdot(uk,fx))
     #fx = real(uk'*fx - mu/2*norm(uk)^2);
@@ -1642,13 +1649,13 @@ def fastProjection( U, S, V, y, b, epsilon, lambda0=0, DISP=False ):
   if S.size > mn**2:
     S = numpy.diag(numpy.diag(S))
   #r = size(S);
-  r = S.shape
+  r = S.shape[0] # S is square
   #if size(U,2) > r, U = U(:,1:r); end
   if U.shape[1] > r:
-    U = U[:,r]
+    U = U[:,:r]
   #if size(V,2) > r, V = V(:,1:r); end
   if V.shape[1] > r:
-    V = V[:,r]
+    V = V[:,:r]
   
   s = numpy.diag(S);
   s2 = s**2;
@@ -1670,7 +1677,7 @@ def fastProjection( U, S, V, y, b, epsilon, lambda0=0, DISP=False ):
       
   # b2 = b.^2;
   b2 = abs(b)**2;  # for complex data
-  bs2 = b2**s2;
+  bs2 = b2*s2;
   epsilon2 = epsilon**2;
   
   # The following routine need to be fast
@@ -1692,7 +1699,7 @@ def fastProjection( U, S, V, y, b, epsilon, lambda0=0, DISP=False ):
       #ls = one./(one-l*s2);
       ls = one/(one-l*s2)
       ls2 = ls**2;
-      ls3 = ls2**ls;
+      ls3 = ls2*ls;
       #ff = b2.'*ls2; # should be .', not ', even for complex data
       ff = numpy.dot(b2.conj(), ls2)
       ff = ff - epsilon2;
@@ -1707,7 +1714,7 @@ def fastProjection( U, S, V, y, b, epsilon, lambda0=0, DISP=False ):
       #if abs(ff) < TOL, break; end        # stopping criteria
       if abs(ff) < TOL:
         break
-      l_old = l.copy();
+      l_old = l
       if k>2 and ( abs(ff) > 10*abs(oldff+100) ): #|| abs(d) > 1e13 )
           l = 0;
           alpha = 1.0/2.0;  
