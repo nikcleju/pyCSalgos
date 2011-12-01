@@ -17,6 +17,7 @@ import pyCSalgos.BP.l1qec
 import pyCSalgos.SL0.SL0_approx
 import pyCSalgos.OMP.omp_QR
 import pyCSalgos.RecomTST.RecommendedTST
+import pyCSalgos.NESTA.NESTA
 
 #==========================
 # Algorithm functions
@@ -55,6 +56,19 @@ def run_sl0_analysis(y,M,Omega,epsilon):
   mu_0 = 2
   L = 10
   return np.dot(D , pyCSalgos.SL0.SL0_approx.SL0_approx_analysis(Aeps,Aexact,y,epsilon,sigmamin,sigma_decrease_factor,mu_0,L))
+
+def run_nesta(y,M,Omega,epsilon):
+  
+  U,S,V = np.linalg.svd(M, full_matrices = True)
+  V = V.T         # Make like Matlab
+  m,n = M.shape   # Make like Matlab
+  S = np.hstack((np.diag(S), np.zeros((m,n-m))))  
+
+  opt_muf = 1e-3
+  optsUSV = {'U':U, 'S':S, 'V':V}
+  opts = {'U':Omega, 'Ut':Omega.T.copy(), 'USV':optsUSV, 'TolVar':1e-5, 'Verbose':0}
+  return pyCSalgos.NESTA.NESTA.NESTA(M, None, y, opt_muf, epsilon, opts)[0]
+
 
 def run_sl0(y,M,Omega,D,U,S,Vt,epsilon,lbd):
   
@@ -121,6 +135,7 @@ gap = (run_gap, 'GAP')
 sl0 = (run_sl0, 'SL0a')
 sl0analysis = (run_sl0_analysis, 'SL0a2')
 bpanalysis = (run_bp_analysis, 'BPa2')
+nesta = (run_nesta, 'NESTA')
 bp  = (run_bp, 'BP')
 ompeps = (run_ompeps, 'OMPeps')
 tst = (run_tst, 'TST')
@@ -147,18 +162,19 @@ def initProcess(share, njobs):
 # Useful for short testing 
 def stdtest():
   # Define which algorithms to run
-  algosN = gap,      # tuple of algorithms not depending on lambda
-  algosL = sl0,bp    # tuple of algorithms depending on lambda (our ABS approach)
+  algosN = nesta,      # tuple of algorithms not depending on lambda
+  #algosL = sl0,bp    # tuple of algorithms depending on lambda (our ABS approach)
+  algosL = ()
   
   d = 50.0
   sigma = 2.0
-  #deltas = np.array([0.05, 0.45, 0.95])
-  #rhos = np.array([0.05, 0.45, 0.95])
+  deltas = np.array([0.05, 0.45, 0.95])
+  rhos = np.array([0.05, 0.45, 0.95])
   #deltas = np.array([0.95])
-  deltas = np.arange(0.05,1.,0.05)
-  rhos = np.array([0.05])
+  #deltas = np.arange(0.05,1.,0.05)
+  #rhos = np.array([0.05])
   numvects = 10; # Number of vectors to generate
-  SNRdb = 7.;    # This is norm(signal)/norm(noise), so power, not energy
+  SNRdb = 20.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
   lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
@@ -503,6 +519,8 @@ def run_once(algosN,algosL,Omega,y,lambdas,realnoise,M,x0):
       try:
         xrec[strname][:,iy] = algofunc(y[:,iy],M,Omega,epsilon)
       except pyCSalgos.BP.l1qec.l1qecInputValueError as e:
+        print "Caught exception when running algorithm",strname," :",e.message
+      except pyCSalgos.NESTA.NESTA.NestaError as e:
         print "Caught exception when running algorithm",strname," :",e.message
       err[strname][iy]    = np.linalg.norm(x0[:,iy] - xrec[strname][:,iy])
       relerr[strname][iy] = err[strname][iy] / np.linalg.norm(x0[:,iy])

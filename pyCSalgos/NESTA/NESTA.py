@@ -8,6 +8,9 @@ Created on Tue Nov 29 16:55:20 2011
 import numpy
 import math
 
+class NestaError(Exception):
+  pass
+
 #function [xk,niter,residuals,outputData,opts] =NESTA(A,At,b,muf,delta,opts)
 def NESTA(A,At,b,muf,delta,opts=None):
   # [xk,niter,residuals,outputData] =NESTA(A,At,b,muf,delta,opts)
@@ -353,7 +356,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
       if numpy.linalg.norm(AAtz - z) / numpy.linalg.norm(z) > 1e-8:
           #error('Measurement matrix A must be a partial isometry: AA''=I');
           print 'Measurement matrix A must be a partial isometry: AA''=I'
-          raise
+          raise NestaError('Measurement matrix A must be a partial isometry: AA''=I')
       #end
   #end
   
@@ -373,7 +376,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
           if delta > 0 and USV is None:
               #error('delta must be zero for non-projections');
               print 'delta must be zero for non-projections'
-              raise
+              raise NesteError('delta must be zero for non-projections')
           #end
           #if isa(AAtinv,'function_handle')
           if hasattr(AAtinv,'__call__'):
@@ -421,7 +424,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
   elif TypeMin.lower() == 'tv':
     #mu0 = ValMUTv(Ux_ref);
     print 'Nic: TODO: not implemented yet'
-    raise
+    raise NestaError('Nic: TODO: not implemented yet')
   
   # -- If U was set by the user and normU not supplied, then calcuate norm(U)
   #if U_userSet && isempty(normU)
@@ -567,7 +570,7 @@ def setOpts(opts,field,default,mn=None,mx=None):
             #printf('Variable #s is #f, should be at least #f\n',...
             #    field,var,mn); error('variable out-of-bounds');
             print 'Variable',field,'is',var,', should be at least',mn
-            raise
+            raise NestaError('setOpts error: value too small')
         #end
     #end
     #if nargin >= 4 && ~isempty(mx)
@@ -576,7 +579,7 @@ def setOpts(opts,field,default,mn=None,mx=None):
             #printf('Variable #s is #f, should be at least #f\n',...
             #    field,var,mn); error('variable out-of-bounds');
             print 'Variable',field,'is',var,', should be at most',mx
-            raise
+            raise NestaError('setOpts error: value too large')
         #end
     #end
     #opts.(field) = var;
@@ -1095,7 +1098,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
   
   if delta < 0:
     print 'delta must be greater or equal to zero'
-    raise
+    raise NestaError('delta must be greater or equal to zero')
   
   if hasattr(A,'__call__'):
       Atfun = At;
@@ -1179,7 +1182,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
   #---- TV Minimization
   if TypeMin == 'TV':
     print 'Nic:TODO: TV minimization not yet implemented!'
-    raise
+    raise NestaError('Nic:TODO: TV minimization not yet implemented!')
   #if strcmpi(TypeMin,'TV')
   #    Lmu = 8*Lmu;
   #    Dv = spdiags([reshape([-ones(n-1,n); zeros(1,n)],N,1) ...
@@ -1279,7 +1282,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
                   #if lambdaY > 0, disp('lambda is positive!'); keyboard; end
                   if lambdaY > 0:
                     print 'lambda is positive!'
-                    raise
+                    raise NestaError('lambda is positive!')
                   yk = xk + projection;
                   Ayk = Afun(yk);
                   # DEBUGGING
@@ -1384,7 +1387,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
                   projection,projIter,lambdaZ = fastProjection(Q,S,V,dfp,bp,deltap, .999*lambdaZ )
                   if lambdaZ > 0:
                     print 'lambda is positive!'
-                    raise
+                    raise NestaError('lambda is positive!')
                   zk = projection.copy();
                   #             zk = SLmu1*projection;
                   Azk = Afun(zk);
@@ -1442,7 +1445,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
       if abs(fx)>1e20 or abs(residuals[k,0]) >1e20 or numpy.isnan(fx):
           #error('Nesta: possible divergence or NaN.  Bad estimate of ||A''A||?');
           print 'Nesta: possible divergence or NaN.  Bad estimate of ||A''A||?'
-          raise
+          raise NestaError('Nesta: possible divergence or NaN.  Bad estimate of ||A''A||?')
       #end
   
   #end
