@@ -20,7 +20,7 @@ def stdtest():
   # Define which algorithms to run
   algosN = nesta,      # tuple of algorithms not depending on lambda
   #algosL = sl0,bp    # tuple of algorithms depending on lambda (our ABS approach)
-  algosL = ()
+  algosL = sl0,
   
   d = 50.0
   sigma = 2.0

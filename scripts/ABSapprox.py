@@ -9,6 +9,7 @@ import numpy as np
 import scipy.io
 import math
 import os
+import time
 
 import stdparams
 import pyCSalgos.Analysis
@@ -101,10 +102,13 @@ def run_multi(algosN, algosL, d, sigma, deltas, rhos, lambdas, numvects, SNRdb,
   nalgosL = len(algosL)
   
   meanmatrix = dict()
+  elapsed = dict()
   for i,algo in zip(np.arange(nalgosN),algosN):
     meanmatrix[algo[1]]   = np.zeros((rhos.size, deltas.size))
+    elapsed[algo[1]] = 0
   for i,algo in zip(np.arange(nalgosL),algosL):
     meanmatrix[algo[1]]   = np.zeros((lambdas.size, rhos.size, deltas.size))
+    elapsed[algo[1]] = np.zeros(lambdas.size)
   
   # Prepare parameters
   jobparams = []
@@ -138,22 +142,25 @@ def run_multi(algosN, algosL, d, sigma, deltas, rhos, lambdas, numvects, SNRdb,
   idx = 0
   for idelta,delta in zip(np.arange(deltas.size),deltas):
     for irho,rho in zip(np.arange(rhos.size),rhos):
-      mrelerrN,mrelerrL = jobresults[idx]
+      mrelerrN,mrelerrL,addelapsed = jobresults[idx]
       idx = idx+1
       for algotuple in algosN: 
         meanmatrix[algotuple[1]][irho,idelta] = 1 - mrelerrN[algotuple[1]]
         if meanmatrix[algotuple[1]][irho,idelta] < 0 or math.isnan(meanmatrix[algotuple[1]][irho,idelta]):
           meanmatrix[algotuple[1]][irho,idelta] = 0
+        elapsed[algotuple[1]] = elapsed[algotuple[1]] + addelapsed[algotuple[1]]
       for algotuple in algosL:
         for ilbd in np.arange(lambdas.size):
           meanmatrix[algotuple[1]][ilbd,irho,idelta] = 1 - mrelerrL[algotuple[1]][ilbd]
           if meanmatrix[algotuple[1]][ilbd,irho,idelta] < 0 or math.isnan(meanmatrix[algotuple[1]][ilbd,irho,idelta]):
             meanmatrix[algotuple[1]][ilbd,irho,idelta] = 0
+          elapsed[algotuple[1]][ilbd] = elapsed[algotuple[1]][ilbd] + addelapsed[algotuple[1]][ilbd]
 
   # Save
   if dosavedata:
     tosave = dict()
     tosave['meanmatrix'] = meanmatrix
+    tosave['elapsed'] = elapsed
     tosave['d'] = d
     tosave['sigma'] = sigma
     tosave['deltas'] = deltas
@@ -215,24 +222,29 @@ def run_once(algosN,algosL,Omega,y,lambdas,realnoise,M,x0):
   xrec = dict()
   err = dict()
   relerr = dict()
+  elapsed = dict()
 
   # Prepare storage variables for algorithms non-Lambda
   for i,algo in zip(np.arange(nalgosN),algosN):
-    xrec[algo[1]]   = np.zeros((d, y.shape[1]))
-    err[algo[1]]    = np.zeros(y.shape[1])
-    relerr[algo[1]] = np.zeros(y.shape[1])
+    xrec[algo[1]]    = np.zeros((d, y.shape[1]))
+    err[algo[1]]     = np.zeros(y.shape[1])
+    relerr[algo[1]]  = np.zeros(y.shape[1])
+    elapsed[algo[1]] = 0
   # Prepare storage variables for algorithms with Lambda    
   for i,algo in zip(np.arange(nalgosL),algosL):
-    xrec[algo[1]]   = np.zeros((lambdas.size, d, y.shape[1]))
-    err[algo[1]]    = np.zeros((lambdas.size, y.shape[1]))
-    relerr[algo[1]] = np.zeros((lambdas.size, y.shape[1]))
+    xrec[algo[1]]    = np.zeros((lambdas.size, d, y.shape[1]))
+    err[algo[1]]     = np.zeros((lambdas.size, y.shape[1]))
+    relerr[algo[1]]  = np.zeros((lambdas.size, y.shape[1]))
+    elapsed[algo[1]] = np.zeros(lambdas.size)
   
   # Run algorithms non-Lambda
   for iy in np.arange(y.shape[1]):
     for algofunc,strname in algosN:
       epsilon = 1.1 * np.linalg.norm(realnoise[:,iy])
       try:
+        timestart = time.time()
         xrec[strname][:,iy] = algofunc(y[:,iy],M,Omega,epsilon)
+        elapsed[strname] = elapsed[strname] + (time.time() - timestart)
       except pyCSalgos.BP.l1qec.l1qecInputValueError as e:
         print "Caught exception when running algorithm",strname," :",e.message
       except pyCSalgos.NESTA.NESTA.NestaError as e:
@@ -250,7 +262,9 @@ def run_once(algosN,algosL,Omega,y,lambdas,realnoise,M,x0):
       for algofunc,strname in algosL:
         epsilon = 1.1 * np.linalg.norm(realnoise[:,iy])
         try:
+          timestart = time.time()
           gamma = algofunc(y[:,iy],M,Omega,D,U,S,Vt,epsilon,lbd)
+          elapsed[strname][ilbd] = elapsed[strname][ilbd] + (time.time() - timestart)
         except pyCSalgos.BP.l1qc.l1qcInputValueError as e:
           print "Caught exception when running algorithm",strname," :",e.message
         xrec[strname][ilbd,:,iy] = np.dot(D,gamma)
@@ -268,7 +282,7 @@ def run_once(algosN,algosL,Omega,y,lambdas,realnoise,M,x0):
   for algotuple in algosL:
     mrelerrL[algotuple[1]] = np.mean(relerr[algotuple[1]],1)
   
-  return mrelerrN,mrelerrL
+  return mrelerrN,mrelerrL,elapsed
 
 
 
