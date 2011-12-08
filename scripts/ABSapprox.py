@@ -11,16 +11,7 @@ import math
 import os
 
 import stdparams
-
-import pyCSalgos
-import pyCSalgos.GAP.GAP
-import pyCSalgos.BP.l1qc
-import pyCSalgos.BP.l1qec
-import pyCSalgos.SL0.SL0_approx
-import pyCSalgos.OMP.omp_QR
-import pyCSalgos.RecomTST.RecommendedTST
-import pyCSalgos.NESTA.NESTA
-
+import pyCSalgos.Analysis
 
 #==========================
 # Pool initializer function (multiprocessing)
@@ -279,6 +270,8 @@ def run_once(algosN,algosL,Omega,y,lambdas,realnoise,M,x0):
   
   return mrelerrN,mrelerrL
 
+
+
 def generateData(d,sigma,delta,rho,numvects,SNRdb):
 
   # Process parameters
@@ -288,7 +281,7 @@ def generateData(d,sigma,delta,rho,numvects,SNRdb):
   l = round(d - rho*m);
   
   # Generate Omega and data based on parameters
-  Omega = pyCSalgos.GAP.GAP.Generate_Analysis_Operator(d, p);
+  Omega = pyCSalgos.Analysis.Generate_Analysis_Operator(d, p);
   # Optionally make Omega more coherent
   U,S,Vt = np.linalg.svd(Omega);
   Sdnew = S * (1+np.arange(S.size)) # Make D coherent, not Omega!
@@ -296,10 +289,11 @@ def generateData(d,sigma,delta,rho,numvects,SNRdb):
   Omega = np.dot(U , np.dot(Snew,Vt))
 
   # Generate data  
-  x0,y,M,Lambda,realnoise = pyCSalgos.GAP.GAP.Generate_Data_Known_Omega(Omega, d,p,m,l,noiselevel, numvects,'l0');
+  x0,y,M,Lambda,realnoise = pyCSalgos.Analysis.Generate_Data_Known_Omega(Omega, d,p,m,l,noiselevel, numvects,'l0');
   
   return Omega,x0,y,M,realnoise
-  
+
+
 def runsingleexampledebug():
   d = 50.0;
   sigma = 2.0

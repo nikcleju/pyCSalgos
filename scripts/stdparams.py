@@ -5,6 +5,7 @@ Created on Wed Dec 07 14:04:40 2011
 @author: ncleju
 """
 
+import numpy
 from algos import *
 
 #==========================
@@ -23,16 +24,16 @@ def stdtest():
   
   d = 50.0
   sigma = 2.0
-  deltas = np.array([0.05, 0.45, 0.95])
-  rhos = np.array([0.05, 0.45, 0.95])
-  #deltas = np.array([0.95])
-  #deltas = np.arange(0.05,1.,0.05)
-  #rhos = np.array([0.05])
+  deltas = numpy.array([0.05, 0.45, 0.95])
+  rhos = numpy.array([0.05, 0.45, 0.95])
+  #deltas = numpy.array([0.95])
+  #deltas = numpy.arange(0.05,1.,0.05)
+  #rhos = numpy.array([0.05])
   numvects = 10; # Number of vectors to generate
   SNRdb = 20.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
-  lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
+  lambdas = numpy.array([0., 0.0001, 0.01, 1, 100, 10000])
   
   dosavedata = True
   savedataname = 'approx_pt_stdtest.mat'
@@ -56,13 +57,13 @@ def std1():
   
   d = 50.0;
   sigma = 2.0
-  deltas = np.arange(0.05,1.,0.05)
-  rhos = np.arange(0.05,1.,0.05)
+  deltas = numpy.arange(0.05,1.,0.05)
+  rhos = numpy.arange(0.05,1.,0.05)
   numvects = 100; # Number of vectors to generate
   SNRdb = 20.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
-  lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
+  lambdas = numpy.array([0., 0.0001, 0.01, 1, 100, 10000])
   
   dosavedata = True
   savedataname = 'approx_pt_std1.mat'
@@ -86,13 +87,13 @@ def std2():
   
   d = 20.0
   sigma = 10.0
-  deltas = np.arange(0.05,1.,0.05)
-  rhos = np.arange(0.05,1.,0.05)
+  deltas = numpy.arange(0.05,1.,0.05)
+  rhos = numpy.arange(0.05,1.,0.05)
   numvects = 100; # Number of vectors to generate
   SNRdb = 20.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
-  lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
+  lambdas = numpy.array([0., 0.0001, 0.01, 1, 100, 10000])
   
   dosavedata = True
   savedataname = 'approx_pt_std2.mat'
@@ -117,13 +118,13 @@ def std3():
   
   d = 50.0;
   sigma = 2.0
-  deltas = np.arange(0.05,1.,0.05)
-  rhos = np.arange(0.05,1.,0.05)
+  deltas = numpy.arange(0.05,1.,0.05)
+  rhos = numpy.arange(0.05,1.,0.05)
   numvects = 100; # Number of vectors to generate
   SNRdb = 10.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
-  lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
+  lambdas = numpy.array([0., 0.0001, 0.01, 1, 100, 10000])
   
   dosavedata = True
   savedataname = 'approx_pt_std3.mat'
@@ -147,13 +148,13 @@ def std4():
   
   d = 20.0
   sigma = 10.0
-  deltas = np.arange(0.05,1.,0.05)
-  rhos = np.arange(0.05,1.,0.05)
+  deltas = numpy.arange(0.05,1.,0.05)
+  rhos = numpy.arange(0.05,1.,0.05)
   numvects = 100; # Number of vectors to generate
   SNRdb = 10.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
-  lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
+  lambdas = numpy.array([0., 0.0001, 0.01, 1, 100, 10000])
   
   dosavedata = True
   savedataname = 'approx_pt_std4.mat'
@@ -177,13 +178,13 @@ def std1nesta():
   
   d = 50.0;
   sigma = 2.0
-  deltas = np.arange(0.05,1.,0.05)
-  rhos = np.arange(0.05,1.,0.05)
+  deltas = numpy.arange(0.05,1.,0.05)
+  rhos = numpy.arange(0.05,1.,0.05)
   numvects = 100; # Number of vectors to generate
   SNRdb = 20.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
-  lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
+  lambdas = numpy.array([0., 0.0001, 0.01, 1, 100, 10000])
   
   dosavedata = True
   savedataname = 'approx_pt_std1nesta.mat'
@@ -207,13 +208,13 @@ def std2nesta():
   
   d = 20.0
   sigma = 10.0
-  deltas = np.arange(0.05,1.,0.05)
-  rhos = np.arange(0.05,1.,0.05)
+  deltas = numpy.arange(0.05,1.,0.05)
+  rhos = numpy.arange(0.05,1.,0.05)
   numvects = 100; # Number of vectors to generate
   SNRdb = 20.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
-  lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
+  lambdas = numpy.array([0., 0.0001, 0.01, 1, 100, 10000])
   
   dosavedata = True
   savedataname = 'approx_pt_std2nesta.mat'
@@ -237,13 +238,13 @@ def std3nesta():
   
   d = 50.0;
   sigma = 2.0
-  deltas = np.arange(0.05,1.,0.05)
-  rhos = np.arange(0.05,1.,0.05)
+  deltas = numpy.arange(0.05,1.,0.05)
+  rhos = numpy.arange(0.05,1.,0.05)
   numvects = 100; # Number of vectors to generate
   SNRdb = 10.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
-  lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
+  lambdas = numpy.array([0., 0.0001, 0.01, 1, 100, 10000])
   
   dosavedata = True
   savedataname = 'approx_pt_std3nesta.mat'
@@ -267,13 +268,13 @@ def std4nesta():
   
   d = 20.0
   sigma = 10.0
-  deltas = np.arange(0.05,1.,0.05)
-  rhos = np.arange(0.05,1.,0.05)
+  deltas = numpy.arange(0.05,1.,0.05)
+  rhos = numpy.arange(0.05,1.,0.05)
   numvects = 100; # Number of vectors to generate
   SNRdb = 10.;    # This is norm(signal)/norm(noise), so power, not energy
   # Values for lambda
   #lambdas = [0 10.^linspace(-5, 4, 10)];
-  lambdas = np.array([0., 0.0001, 0.01, 1, 100, 10000])
+  lambdas = numpy.array([0., 0.0001, 0.01, 1, 100, 10000])
   
   dosavedata = True
   savedataname = 'approx_pt_std4nesta.mat'
