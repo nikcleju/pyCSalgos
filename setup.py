@@ -6,7 +6,7 @@ setup(
     description = "Python Compressed Sensing algorithms",
     author = "Nicolae Cleju",
     author_email = "nikcleju@gmail.com",
-    utl = 'https://code.soundsoftware.ac.uk/projects/svsa',
+    url = 'https://code.soundsoftware.ac.uk/projects/avssrec',
     classifiers = [
         "Programming Language :: Python",
         "Development Status :: 4 - Beta",
