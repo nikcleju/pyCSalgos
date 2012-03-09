@@ -1,7 +1,7 @@
 from distutils.core import setup
 setup(
     name = "pyCSalgos",
-    packages = ["pyCSalgos","pyCSalgos/BP","pyCSalgos/GAP","pyCSalgos/NESTA","pyCSalgos/OMP","pyCSalgos/RecomTST","pyCSalgos/SL0"],
+    packages = ["pyCSalgos","pyCSalgos/BP","pyCSalgos/GAP","pyCSalgos/NESTA","pyCSalgos/OMP","pyCSalgos/TST","pyCSalgos/SL0"],
     version = "1.0.0",
     description = "Python Compressed Sensing algorithms",
     author = "Nicolae Cleju",
