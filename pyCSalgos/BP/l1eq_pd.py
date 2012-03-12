@@ -3,7 +3,7 @@ import numpy
 import scipy.linalg
 import math
 
-class l1ecNotImplementedError(Exception):
+class l1eqNotImplementedError(Exception):
   pass
 
 #function xp = l1eq_pd(x0, A, At, b, pdtol, pdmaxiter, cgtol, cgmaxiter)
@@ -240,7 +240,7 @@ def l1eq_pd(x0, A, At, b, pdtol=1e-3, pdmaxiter=50, cgtol=1e-8, cgmaxiter=200, v
     # starting point --- make sure that it is feasible
     #if (largescale)
     if largescale:
-      raise l1qcNotImplementedError('Largescale not implemented yet!')
+      raise l1eqNotImplementedError('Largescale not implemented yet!')
     else:
       #if (norm(A*x0-b)/norm(b) > cgtol)
       if numpy.linalg.norm(numpy.dot(A,x0)-b) / numpy.linalg.norm(b) > cgtol:
@@ -284,7 +284,7 @@ def l1eq_pd(x0, A, At, b, pdtol=1e-3, pdmaxiter=50, cgtol=1e-8, cgmaxiter=200, v
       #v = -A(lamu1-lamu2);
       #Atv = At(v);
       #rpri = A(x) - b;
-      raise l1qcNotImplementedError('Largescale not implemented yet!')
+      raise l1eqNotImplementedError('Largescale not implemented yet!')
     else:
       #v = -A*(lamu1-lamu2);
       #Atv = A'*v;
@@ -336,7 +336,7 @@ def l1eq_pd(x0, A, At, b, pdtol=1e-3, pdmaxiter=50, cgtol=1e-8, cgmaxiter=200, v
         #dx = (w1 - w2.*sig2./sig1 - At(dv))./sigx;
         #Adx = A(dx);
         #Atdv = At(dv);
-        raise l1qcNotImplementedError('Largescale not implemented yet!')
+        raise l1eqNotImplementedError('Largescale not implemented yet!')
       else:
         #w1p = -(w3 - A*(w1./sigx - w2.*sig2./(sigx.*sig1)));
         w1p = -(w3 - numpy.dot(A,(w1/sigx - w2*sig2/(sigx*sig1))))
@@ -459,7 +459,7 @@ def l1eq_pd(x0, A, At, b, pdtol=1e-3, pdmaxiter=50, cgtol=1e-8, cgmaxiter=200, v
         print 'Iteration =',pditer,', tau =',tau,', Primal =',numpy.sum(u),', PDGap =',sdg,', Dual res =',numpy.linalg.norm(rdual),', Primal res =',numpy.linalg.norm(rpri)
       if largescale:
         #disp(sprintf('                  CG Res = #8.3e, CG Iter = #d', cgres, cgiter));
-        raise l1qcNotImplementedError('Largescale not implemented yet!')
+        raise l1eqNotImplementedError('Largescale not implemented yet!')
       else:
         #disp(sprintf('                  H11p condition number = #8.3e', hcond));
         if verbose:
