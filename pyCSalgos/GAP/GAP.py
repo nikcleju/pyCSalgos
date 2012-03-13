@@ -313,6 +313,10 @@ def GAP(y, M, MH, Omega, OmegaH, params, xinit):
       #figure(10);
       #imshow(reshape(real(xhat), n, n));
   
+      # Added by Nic: if Lambdahat is empty here, return
+      if Lambdahat.size == 0:
+        break;
+        
   #return;
   return xhat,Lambdahat
  
