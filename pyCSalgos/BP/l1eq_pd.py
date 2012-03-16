@@ -221,6 +221,11 @@ def l1eq_pd(x0, A, At, b, pdtol=1e-3, pdmaxiter=50, cgtol=1e-8, cgmaxiter=200, v
     # End of original Matab code
     #----------------------------    
     
+    # Nic: check if b is 0; if so, return 0
+    #    Otherwise it will break later
+    if numpy.linalg.norm(b) < 1e-16:
+        return numpy.zeros_like(x0)
+    
     #largescale = isa(A,'function_handle');
     if hasattr(A, '__call__'):
         largescale = True
@@ -257,7 +262,7 @@ def l1eq_pd(x0, A, At, b, pdtol=1e-3, pdmaxiter=50, cgtol=1e-8, cgmaxiter=200, v
         #x0 = A'*w;
         try:
             w = scipy.linalg.solve(numpy.dot(A,A.T), b, sym_pos=True)
-            hcond = 1.0/numpy.linalg.cond(np.dot(A,A.T))
+            hcond = 1.0/numpy.linalg.cond(numpy.dot(A,A.T))
         except scipy.linalg.LinAlgError:
             if verbose:
               print 'A*At is ill-conditioned: cannot find starting point'

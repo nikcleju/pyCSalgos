@@ -55,7 +55,8 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
     #if strcmp(params.l2solver, 'pseudoinverse')
     if params['l2solver'] == 'pseudoinverse':
     #if strcmp(class(M), 'double') && strcmp(class(Omega), 'double')
-      if M.dtype == 'float64' and Omega.dtype == 'double':
+      #if M.dtype == 'float64' and Omega.dtype == 'double':
+      if 1:
         while True:
             alpha = math.sqrt(lagmult);
             xhat = numpy.linalg.lstsq(numpy.concatenate((M, alpha*Omega[Lambdahat,:])), numpy.concatenate((y, numpy.zeros(Lambdahat.size))))[0]
