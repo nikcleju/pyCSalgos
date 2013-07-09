@@ -9,6 +9,7 @@ Created on Thu Oct 13 14:05:22 2011
 import numpy
 import numpy.linalg
 import scipy as sp
+import scipy.stats
 
 import math
 
@@ -332,7 +333,8 @@ def FindRowsToRemove(analysis_repr, greedy_level):
     maxcoef = abscoef.max()
     if greedy_level >= 1:
         #qq = quantile(abscoef, 1.0-greedy_level/n);
-        qq = sp.stats.mstats.mquantile(abscoef, 1.0-greedy_level/n, 0.5, 0.5)        
+        #qq = sp.stats.mstats.mquantiles(abscoef, 1.0-greedy_level/n, 0.5, 0.5)        
+        qq = sp.stats.mstats.mquantiles(abscoef, 1.0-greedy_level/n)
     else:
         qq = maxcoef*greedy_level
 
@@ -358,7 +360,7 @@ def check_stopping_criteria(xhat, xinit, maxcoef, lagmult, Lambdahat, params):
         return 1
 
     #if isfield(params, 'stopping_cosparsity') && length(Lambdahat) < params.stopping_cosparsity
-    if ('stopping_cosparsity' in params) and Lambdahat.size() < params['stopping_cosparsity']:
+    if ('stopping_cosparsity' in params) and Lambdahat.size < params['stopping_cosparsity']:
         return 1
     
     return 0

@@ -11,7 +11,7 @@ __email__ = "nikcleju@gmail.com"
 import numpy
 import scipy
 import math
-import cvxpy
+#import cvxpy
 
 class EllipseProjDaiError(Exception):
 #  def __init__(self, e):
