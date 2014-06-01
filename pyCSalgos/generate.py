@@ -18,24 +18,29 @@ def make_sparse_coded_signal(n,N,k,Ndata,use_sklearn=True):
     """
     Generate a sparse coded signal
     """
-    if use_sklearn and has_sklearn_datasets:
-        return sklearn.datasets.make_sparse_coded_signal(n_samples=Ndata, n_features=n, n_components=N, n_nonzero_coefs=k)
-
-    # Generate random dictionary and normalize
-    # TODO: Use sklearn-type random generators instead of numpy.random
-    D = numpy.random.randn(n,N)
-    D = D / numpy.sqrt(numpy.sum(D**2, axis=0))
 
     # Generate coefficients matrix
     support = numpy.zeros((k, Ndata),dtype=int)
-    gamma = numpy.zeros((N, Ndata))
-    for i in range(Ndata):
-        support[:, i] = numpy.random.permutation(N)[:k]
-        gamma[support[:, i],i] = numpy.random.randn(k)
 
+    if use_sklearn and has_sklearn_datasets:
+        X, D, gamma = sklearn.datasets.make_sparse_coded_signal(n_samples=Ndata, n_features=n, n_components=N, n_nonzero_coefs=k)
+        for i in range(Ndata):
+            support[:, i] = numpy.nonzero(gamma[:,i])[0]
 
-    # Generate data
-    X = numpy.dot(D,gamma)
+    else:
+        # Generate random dictionary and normalize
+        # TODO: Use sklearn-type random generators instead of numpy.random
+        D = numpy.random.randn(n,N)
+        D = D / numpy.sqrt(numpy.sum(D**2, axis=0))
+
+        # Generate coefficients matrix
+        gamma = numpy.zeros((N, Ndata))
+        for i in range(Ndata):
+            support[:, i] = numpy.random.permutation(N)[:k]
+            gamma[support[:, i],i] = numpy.random.randn(k)
+
+        # Generate data
+        X = numpy.dot(D,gamma)
 
     return X,D,gamma,support
 
