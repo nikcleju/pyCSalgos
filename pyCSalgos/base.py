@@ -31,5 +31,5 @@ class SparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
 #        self.coef_ = None
         
     @abstractmethod
-    def run():
+    def solve():
         """Run the solver"""

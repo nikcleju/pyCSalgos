@@ -40,7 +40,7 @@ class MySolver(SparseSolver):
         self.y_ = y
         self.A_ = A
         self.coef_ = None        
-    def run(self):
+    def solve(self):
         """Do nothing"""
 
 
@@ -48,7 +48,7 @@ class K(SparseSolver):
     def __init__(self, c=None, d=None):
         self.c = c
         self.d = d
-    def run(self):
+    def solve(self):
         """Do nothing"""
 
 
@@ -56,7 +56,7 @@ class T(SparseSolver):
     def __init__(self, a=None, b=None):
         self.a = a
         self.b = b
-    def run(self):
+    def solve(self):
         """Do nothing"""
 
 
@@ -68,7 +68,7 @@ class DeprecatedAttributeSolver(SparseSolver):
             warnings.warn("b is deprecated and renamed 'a'", DeprecationWarning)
             self._a = b
    
-    def run(self):
+    def solve(self):
         """Do nothing"""
 
     @property
@@ -122,7 +122,7 @@ def test_deprecated():
         warnings.simplefilter("always")
         # Trigger a warning.
         d = DeprecatedAttributeSolver(a=1,b=2)
-        d.run()
+        d.solve()
         print len(w)
         # Verify some things
         assert len(w) == 1
