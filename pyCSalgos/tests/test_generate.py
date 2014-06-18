@@ -32,7 +32,7 @@ def test_make_sparse_coded_signal():
 
 def subtest_make_sparse_coded_signal(n,N,k,Ndata,use_sklearn):
 
-    X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, use_sklearn)
+    X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, "randn", use_sklearn)
 
     # check shapes
     print X.shape
@@ -61,15 +61,15 @@ def test_dictionary():
     k = 5
     Ndata = 10
 
-    assert_raises(ValueError, make_sparse_coded_signal, n, N, k, Ndata, True, "orthonormal")
+    assert_raises(ValueError, make_sparse_coded_signal, n, N, k, Ndata, "orthonormal", True)
 
-    X, D, gamma, support = make_sparse_coded_signal(n, n, k, Ndata, use_sklearn=True, dictionary="orthonormal")
+    X, D, gamma, support = make_sparse_coded_signal(n, n, k, Ndata, dictionary="orthonormal", use_sklearn=True)
     assert_allclose(numpy.dot(D, D.T), numpy.eye(n), atol=1e-10)
     assert_allclose(numpy.dot(D.T, D), numpy.eye(n), atol=1e-10)
 
     Dict = numpy.random.randn(n,N)
-    assert_raises(ValueError, make_sparse_coded_signal, n, N+1, k, Ndata, True, Dict)
-    X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, use_sklearn=True, dictionary=Dict)
+    assert_raises(ValueError, make_sparse_coded_signal, n, N+1, k, Ndata, Dict, True)
+    X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, dictionary=Dict, use_sklearn=True)
     assert_array_equal(D, Dict)
 
-    assert_raises(ValueError, make_sparse_coded_signal, n, N, k, Ndata, True, "somethingwrong")
+    assert_raises(ValueError, make_sparse_coded_signal, n, N, k, Ndata, "somethingwrong", True)

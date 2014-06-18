@@ -15,7 +15,7 @@ except ImportError, e:
     # module doesn't exist
     has_sklearn_datasets = False
 
-def make_sparse_coded_signal(n,N,k,Ndata,use_sklearn=True, dictionary="randn"):
+def make_sparse_coded_signal(n,N,k,Ndata, dictionary="randn", use_sklearn=True):
     """
     Generate a sparse coded signal
     """
