@@ -28,6 +28,8 @@ from omp import OrthogonalMatchingPursuit
 n, N, k, Ndata = 20,30,3,10
 rng = np.random.RandomState(47)
 
+SolverClass = OrthogonalMatchingPursuit
+
 X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata)
 tol = 1e-6
 
@@ -40,7 +42,7 @@ def test_correct_shapes():
             yield subtest_correct_shapes, stopval, algo
 
 def subtest_correct_shapes(stopval, algorithm):
-    omp = OrthogonalMatchingPursuit(stopval = stopval, algorithm=algorithm)
+    omp = SolverClass(stopval = stopval, algorithm=algorithm)
     # single vector
     coef = omp.solve(X[:,0], D)
     assert_equal(coef.shape, (N,))
@@ -56,7 +58,7 @@ def test_tol():
             yield subtest_tol, stopval, algo
 
 def subtest_tol(stopval, algorithm):
-    omp = OrthogonalMatchingPursuit(stopval = stopval, algorithm=algorithm)
+    omp = SolverClass(stopval = stopval, algorithm=algorithm)
     coef = omp.solve(X, D)
     for i in range(X.shape[1]):
         assert_true(np.sum((X[:, i] - np.dot(D, coef[:,i])) ** 2) <= stopval)
@@ -69,7 +71,7 @@ def test_n_nonzero_coefs():
             yield subtest_n_nonzero_coefs, stopval, algo
 
 def subtest_n_nonzero_coefs(stopval, algorithm):
-    omp = OrthogonalMatchingPursuit(stopval = stopval, algorithm=algorithm)
+    omp = SolverClass(stopval = stopval, algorithm=algorithm)
     coef = omp.solve(X, D)
     for i in range(X.shape[1]):
         assert_true(np.count_nonzero(coef[:,i]) <= stopval)
@@ -83,7 +85,7 @@ def test_perfect_support_recovery():
 def subtest_perfect_support_recovery(stopval, algorithm):
     # check support only when stopping criterion = fixed sparsity
     # otherwise might get very small but non-zero coefficients
-    omp = OrthogonalMatchingPursuit(stopval = stopval, algorithm=algorithm)
+    omp = SolverClass(stopval = stopval, algorithm=algorithm)
     notused, Dortho, gammaortho, supportortho = make_sparse_coded_signal(n, n, k, Ndata)
     Dortho = scipy.linalg.orth(Dortho)
     Xortho = np.dot(Dortho, gammaortho)
@@ -101,7 +103,7 @@ def test_perfect_signal_recovery():
             yield subtest_perfect_signal_recovery, stopval, algo
 
 def subtest_perfect_signal_recovery(stopval, algorithm):
-    omp = OrthogonalMatchingPursuit(stopval = stopval, algorithm=algorithm)
+    omp = SolverClass(stopval = stopval, algorithm=algorithm)
     coef = omp.solve(X,D)
     assert_allclose(gamma, coef, atol=1e-6)
 
@@ -117,23 +119,22 @@ def subtest_omp_reaches_least_squares(algorithm):
     D1 = rng.randn(n1, N1)
     for i in range(N1):
         D1[:,i] = D1[:,i] / np.linalg.norm(D1[:,i])
-    omp = OrthogonalMatchingPursuit(stopval = N1, algorithm=algorithm)
+    omp = SolverClass(stopval = N1, algorithm=algorithm)
     coef = omp.solve(X1, D1)
     lstsq = np.dot(np.linalg.pinv(D1), X1)
     assert_allclose(coef, lstsq, atol=1e-10)
 
 
 def test_bad_input():
-    #omp = OrthogonalMatchingPursuit(stopval = stopval, algorithm=algorithm)
-    assert_raises(ValueError, OrthogonalMatchingPursuit, stopval=-1)
+    assert_raises(ValueError, SolverClass, stopval=-1)
 
-    omp = OrthogonalMatchingPursuit(stopval=n+1, algorithm="sklearn")
+    omp = SolverClass(stopval=n+1, algorithm="sklearn")
     assert_raises(ValueError, omp.solve, X, D)
 
-    omp = OrthogonalMatchingPursuit(stopval=N+1, algorithm="sklearn")
+    omp = SolverClass(stopval=N+1, algorithm="sklearn")
     assert_raises(ValueError, omp.solve, X, D)
 
-    omp = OrthogonalMatchingPursuit(stopval=1e-6, algorithm="nonexistent")
+    omp = SolverClass(stopval=1e-6, algorithm="nonexistent")
     assert_raises(ValueError, omp.solve, X, D)
 
 
@@ -144,7 +145,7 @@ def test_identical_regressors():
     gamma = np.zeros(N)
     gamma[0] = gamma[1] = 1.
     newy = np.dot(newD, gamma)
-    omp = OrthogonalMatchingPursuit(stopval=2, algorithm="sklearn")
+    omp = SolverClass(stopval=2, algorithm="sklearn")
     assert_warns(RuntimeWarning, omp.solve, data=newy, dictionary=newD)
     #assert_warns(RuntimeWarning, orthogonal_mp, newX, newy, 2)
 
@@ -160,7 +161,7 @@ def test_swapped_regressors():
     new_y = np.dot(D, gamma)
     new_Xy = np.dot(D.T, new_y)
     #gamma_hat = orthogonal_mp(X, new_y, 2)
-    gamma_hat = OrthogonalMatchingPursuit(stopval=2).solve(new_y, D)
+    gamma_hat = SolverClass(stopval=2).solve(new_y, D)
     assert_array_equal(np.flatnonzero(gamma_hat), [0, 21])
 
 

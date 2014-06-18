@@ -10,7 +10,14 @@ from numpy.testing import assert_equal
 from numpy.testing import assert_array_equal
 from numpy.testing import assert_array_almost_equal
 
-from pyCSalgos.generate import make_sparse_coded_signal
+from sklearn.utils.testing import assert_raises
+from sklearn.utils.testing import assert_true
+from sklearn.utils.testing import assert_equal
+from sklearn.utils.testing import assert_array_equal
+from sklearn.utils.testing import assert_allclose
+from sklearn.utils.testing import assert_warns
+
+from generate import make_sparse_coded_signal
 
 
 def test_make_sparse_coded_signal():
@@ -49,5 +56,20 @@ def subtest_make_sparse_coded_signal(n,N,k,Ndata,use_sklearn):
         assert(not numpy.any(gamma[izero, i])) # check if all zeros are zero
 
 
+def test_dictionary():
+    n, N = 20, 30
+    k = 5
+    Ndata = 10
 
+    assert_raises(ValueError, make_sparse_coded_signal, n, N, k, Ndata, True, "orthonormal")
 
+    X, D, gamma, support = make_sparse_coded_signal(n, n, k, Ndata, use_sklearn=True, dictionary="orthonormal")
+    assert_allclose(numpy.dot(D, D.T), numpy.eye(n), atol=1e-10)
+    assert_allclose(numpy.dot(D.T, D), numpy.eye(n), atol=1e-10)
+
+    Dict = numpy.random.randn(n,N)
+    assert_raises(ValueError, make_sparse_coded_signal, n, N+1, k, Ndata, True, Dict)
+    X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, use_sklearn=True, dictionary=Dict)
+    assert_array_equal(D, Dict)
+
+    assert_raises(ValueError, make_sparse_coded_signal, n, N, k, Ndata, True, "somethingwrong")

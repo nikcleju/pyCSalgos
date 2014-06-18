@@ -9,26 +9,15 @@ Tests for base.py
 # License: BSD 3 clause
 
 
-import numpy as np
-
-from sklearn.utils.testing import assert_array_equal
-from sklearn.utils.testing import assert_true
-from sklearn.utils.testing import assert_false
-from sklearn.utils.testing import assert_equal
-from sklearn.utils.testing import assert_not_equal
-from sklearn.utils.testing import assert_raises
-
-from numpy.testing import assert_almost_equal
-from numpy.testing import assert_array_equal
-from numpy.testing import assert_array_almost_equal
-from numpy.testing import assert_array_less
-import numpy as np
-
 import warnings
+
+from sklearn.utils.testing import assert_true
+from sklearn.utils.testing import assert_equal
+from sklearn.utils.testing import assert_raises
 from sklearn.utils import deprecated
 
-import pyCSalgos
-from pyCSalgos.base import SparseSolver
+from base import SparseSolver
+
 
 
 #############################################################################
