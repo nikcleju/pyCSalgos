@@ -23,6 +23,11 @@ import numpy as np
 import scipy
 
 class OrthogonalMatchingPursuit(SparseSolver):
+    """
+    Attention: compressed sensing problems shouldn't use sklearn's OMP because it assumes that the dictionary
+     is normalized, which is not the case with the effective dictionary P*D
+     Better use "sparsify_QR" instead.
+    """
 
     # All parameters related to the algorithm itself are given here.
     # The data and dictionary are given to the run() method
