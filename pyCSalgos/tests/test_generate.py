@@ -18,6 +18,7 @@ from sklearn.utils.testing import assert_allclose
 from sklearn.utils.testing import assert_warns
 
 from generate import make_sparse_coded_signal
+from generate import make_compressed_sensing_problem
 
 
 def test_make_sparse_coded_signal():
@@ -73,3 +74,20 @@ def test_make_sparse_coded_signal_dictionary():
     assert_array_equal(D, Dict)
 
     assert_raises(ValueError, make_sparse_coded_signal, n, N, k, Ndata, "somethingwrong", True)
+
+def test_make_compressed_sensing_problem():
+    m = 10
+    n, N = 20, 30
+    k = 5
+    Ndata = 10
+
+    assert_raises(ValueError, make_compressed_sensing_problem, m, n, N, k, Ndata, "randn", "somethingwrong", True)
+    P = numpy.random.randn(m,n)
+    assert_raises(ValueError, make_compressed_sensing_problem, m+1, n, N, k, Ndata, "randn", P, True)
+
+    measurements, acqumatrix, data, dictionary, gamma, support = \
+        make_compressed_sensing_problem(m, n, N, k, Ndata, "randn", "randn", True)
+
+    assert_equal(measurements.shape, (m,Ndata))
+    assert_equal(acqumatrix.shape, (m,n))
+    assert_array_equal(measurements, numpy.dot(acqumatrix, data))

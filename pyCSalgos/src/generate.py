@@ -63,5 +63,25 @@ def make_sparse_coded_signal(n,N,k,Ndata, dictionary="randn", use_sklearn=True):
     return X,D,gamma,support
 
 
+def make_compressed_sensing_problem(m, n,N,k,Ndata, dictionary="randn", acquisition="randn", use_sklearn=True):
+    """
+    Make compressed sensing problem
+    """
 
+    # generate sparse coded data
+    data, dictionary, gamma, support = make_sparse_coded_signal(n,N,k,Ndata, dictionary, use_sklearn)
 
+    # generate acquisition matrix
+    if acquisition=="randn":
+        acqumatrix = numpy.random.randn(m, n)
+    elif isinstance(acquisition, numpy.ndarray):
+        # acquisition matrix is given
+        if m != acquisition.shape[0] or n != acquisition.shape[1]:
+            raise ValueError("Acquisition matrix shape different from (m,n)")
+        acqumatrix = acquisition
+    else:
+        raise ValueError("Unrecognized acquisition matrix type")
+
+    measurements = numpy.dot(acqumatrix, data)
+
+    return measurements, acqumatrix, data, dictionary, gamma, support
