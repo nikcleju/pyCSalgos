@@ -56,7 +56,7 @@ def subtest_make_sparse_coded_signal(n,N,k,Ndata,use_sklearn):
         assert(not numpy.any(gamma[izero, i])) # check if all zeros are zero
 
 
-def test_dictionary():
+def test_make_sparse_coded_signal_dictionary():
     n, N = 20, 30
     k = 5
     Ndata = 10
