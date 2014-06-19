@@ -44,6 +44,9 @@ class OrthogonalMatchingPursuit(SparseSolver):
         self.stopval = stopval
         self.algorithm = algorithm
 
+    def __str__(self):
+        return "OMP ("+str(self.stopval)+", "+str(self.algorithm)+")"
+
     def solve(self, data, dictionary):
         return _orthogonal_matching_pursuit(data, dictionary, self.stopval, self.algorithm)
 

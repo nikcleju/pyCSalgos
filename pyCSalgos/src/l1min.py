@@ -27,6 +27,10 @@ class L1Min(SparseSolver):
         self.stopval = stopval
         self.algorithm = algorithm
 
+    def __str__(self):
+        return "L1 Minimization ("+str(self.stopval)+", "+str(self.algorithm)+")"
+
+
     def solve(self, data, dictionary):
         return _l1min(data, dictionary, self.stopval, self.algorithm)
 
