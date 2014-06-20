@@ -7,7 +7,6 @@ Provides l1 minimization from l1magic toolbox
 # Author: Nicolae Cleju (translated to Python), Justin Romberg (original author of l1magic Matlab toolbox)
 # License: BSD 3 clause
 
-import time
 import math
 import numpy as np
 import scipy
