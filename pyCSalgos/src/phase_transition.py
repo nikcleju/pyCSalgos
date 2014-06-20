@@ -50,10 +50,29 @@ class PhaseTransition:
                         errors[:, i] = errors[:, i] / np.linalg.norm(realdata[:, i])
                     self.avgerr[solver][idelta, irho] = np.mean(np.sqrt(sum(errors**2, 0)))
 
-    def plot(self):
+    def plot(self, subplot=True):
         if self.avgerr is None:
             ValueError("No data to plot (have you run()?)")
-        for solver in self.avgerr.keys():
+
+        if subplot == True:
+            numsolvers = len(self.avgerr)
+            if numsolvers == 2:
+                subplotlayout = (1,2)
+            elif numsolvers == 3:
+                subplotlayout = (1,3)
+            elif numsolvers == 4:
+                subplotlayout = (2,2)
+            elif numsolvers == 5:
+                subplotlayout = (2,3)
+            elif numsolvers == 6:
+                subplotlayout = (2,3)
+        elif len(subplot) == 2:
+            subplotlayout = (i for i in subplot)
+        else:
+            raise ValueError("Incorrect 'subplot' parameter")
+
+        for i, solver in enumerate(self.avgerr.keys()):
+            plt.subplot(*(subplotlayout+(i,)))
             plot_phase_transition(self.avgerr[solver])
             plt.title(solver)
             plt.xlabel(r"$\delta$")
@@ -78,6 +97,6 @@ def plot_phase_transition(matrix):
         for j in np.arange(cols):
             bigmatrix[i*N:i*N+N,j*N:j*N+N] = matrix[i,j]
 
-    plt.figure()
+    # plt.figure()
     # Transpose the data so first axis = horizontal, use inverse colormap so small(good) = white, origin = lower left
     plt.imshow(bigmatrix.T, cmap=cm.gray_r, norm=mcolors.Normalize(0, 1), interpolation='nearest', origin='lower')
