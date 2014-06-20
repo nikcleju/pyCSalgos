@@ -37,12 +37,12 @@ def test_correct_shapes():
             yield subtest_correct_shapes, stopval, algo
 
 def subtest_correct_shapes(stopval, algorithm):
-    omp = SolverClass(stopval = stopval, algorithm=algorithm)
+    solver = SolverClass(stopval = stopval, algorithm=algorithm)
     # single vector
-    coef = omp.solve(X[:,0], D)
+    coef = solver.solve(X[:,0], D)
     assert_equal(coef.shape, (N,))
     # multiple vectors
-    coef = omp.solve(X, D)
+    coef = solver.solve(X, D)
     assert_equal(coef.shape, (N, Ndata))
 
 
@@ -53,8 +53,8 @@ def test_tol():
             yield subtest_tol, stopval, algo
 
 def subtest_tol(stopval, algorithm):
-    omp = SolverClass(stopval = stopval, algorithm=algorithm)
-    coef = omp.solve(X, D)
+    solver = SolverClass(stopval = stopval, algorithm=algorithm)
+    coef = solver.solve(X, D)
     for i in range(X.shape[1]):
         assert_true(np.sum((X[:, i] - np.dot(D, coef[:,i])) ** 2) <= max(stopval, 1e-6))
 
@@ -66,24 +66,24 @@ def test_perfect_signal_recovery():
             yield subtest_perfect_signal_recovery, stopval, algo
 
 def subtest_perfect_signal_recovery(stopval, algorithm):
-    omp = SolverClass(stopval = stopval, algorithm=algorithm)
-    coef = omp.solve(X,D)
+    solver = SolverClass(stopval = stopval, algorithm=algorithm)
+    coef = solver.solve(X,D)
     assert_allclose(gamma, coef, atol=1e-4)
 
 
-# def test_omp_reaches_least_squares():
+# def test_solver_reaches_least_squares():
 #     for algo in algorithms:
-#         yield subtest_omp_reaches_least_squares, algo
+#         yield subtest_solver_reaches_least_squares, algo
 #
-# def subtest_omp_reaches_least_squares(algorithm):
+# def subtest_solver_reaches_least_squares(algorithm):
 #     n1 = 10
 #     N1 = 8
 #     X1 = rng.randn(n1, 3)
 #     D1 = rng.randn(n1, N1)
 #     for i in range(N1):
 #         D1[:,i] = D1[:,i] / np.linalg.norm(D1[:,i])
-#     omp = SolverClass(stopval = 1e-6, algorithm=algorithm)
-#     coef = omp.solve(X1, D1)
+#     solver = SolverClass(stopval = 1e-6, algorithm=algorithm)
+#     coef = solver.solve(X1, D1)
 #     lstsq = np.dot(np.linalg.pinv(D1), X1)
 #     assert_allclose(coef, lstsq, atol=1e-10)
 
@@ -91,8 +91,8 @@ def subtest_perfect_signal_recovery(stopval, algorithm):
 def test_bad_input():
     assert_raises(ValueError, SolverClass, stopval=-1)
 
-    omp = SolverClass(stopval=1e-6, algorithm="nonexistent")
-    assert_raises(ValueError, omp.solve, X, D)
+    solver = SolverClass(stopval=1e-6, algorithm="nonexistent")
+    assert_raises(ValueError, solver.solve, X, D)
 
 
 # # TODO: to reanalyze, didn't figure out what it does
@@ -102,8 +102,8 @@ def test_bad_input():
 #     gamma = np.zeros(N)
 #     gamma[0] = gamma[1] = 1.
 #     newy = np.dot(newD, gamma)
-#     omp = SolverClass(stopval=1e-3, algorithm="l1magic")
-#     assert_warns(RuntimeWarning, omp.solve, data=newy, dictionary=newD)
+#     solver = SolverClass(stopval=1e-3, algorithm="l1magic")
+#     assert_warns(RuntimeWarning, solver.solve, data=newy, dictionary=newD)
 #     #assert_warns(RuntimeWarning, orthogonal_mp, newX, newy, 2)
 #
 #
