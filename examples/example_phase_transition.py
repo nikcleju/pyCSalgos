@@ -8,12 +8,18 @@ import numpy
 from pyCSalgos.phase_transition import PhaseTransition
 from pyCSalgos.omp import OrthogonalMatchingPursuit
 from pyCSalgos.l1min import L1Min
+from pyCSalgos.sl0 import SmoothedL0
+from pyCSalgos.tst import TwoStageThresholding
 
 def run():
     n, N = 50, 70
     deltas = numpy.arange(0.1, 0.9, 0.1)
     rhos = numpy.arange(0.1, 0.9, 0.1)
-    pt = PhaseTransition(n, N, deltas, rhos, 3, [OrthogonalMatchingPursuit(1e-6, algorithm="sparsify_QR"), L1Min(1e-6)])
+    pt = PhaseTransition(n, N, deltas, rhos, 3,
+                         [OrthogonalMatchingPursuit(1e-6, algorithm="sparsify_QR"),
+                          L1Min(1e-6),
+                          SmoothedL0(1e-6),
+                          TwoStageThresholding(1e-6)])
     pt.run()
     pt.plot()
     print "Example finished."
