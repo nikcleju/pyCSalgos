@@ -19,6 +19,8 @@ from sklearn.utils.testing import assert_warns
 
 from generate import make_sparse_coded_signal
 from generate import make_compressed_sensing_problem
+from generate import make_cosparse_coded_signal
+from generate import make_analysis_compressed_sensing_problem
 
 
 def test_make_sparse_coded_signal():
@@ -75,6 +77,7 @@ def test_make_sparse_coded_signal_dictionary():
 
     assert_raises(ValueError, make_sparse_coded_signal, n, N, k, Ndata, "somethingwrong", True)
 
+
 def test_make_compressed_sensing_problem():
     m = 10
     n, N = 20, 30
@@ -89,5 +92,65 @@ def test_make_compressed_sensing_problem():
         make_compressed_sensing_problem(m, n, N, k, Ndata, "randn", "randn", True)
 
     assert_equal(measurements.shape, (m,Ndata))
+    assert_equal(acqumatrix.shape, (m,n))
+    assert_array_equal(measurements, numpy.dot(acqumatrix, data))
+
+
+def test_make_cosparse_coded_signal():
+
+    N, n = 30, 20
+    l = 15
+    numdata = 10
+
+    # Check operator
+    #   raises
+    assert_raises(ValueError, make_cosparse_coded_signal, n, N, l, numdata, "orthonormal")
+    assert_raises(ValueError, make_cosparse_coded_signal, n, N+1, l, numdata, numpy.random.randn(N,n))
+    assert_raises(ValueError, make_cosparse_coded_signal, n, N, l, numdata, "somethingwrong")
+    #  normalization
+    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, n, l, numdata, operatortype="randn")
+    assert_allclose(numpy.sqrt(numpy.sum(operator**2, axis=1)), numpy.ones(n), atol=1e-10)
+    #  orthonormality
+    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, n, l, numdata, operatortype="orthonormal")
+    assert_allclose(numpy.dot(operator, operator.T), numpy.eye(n), atol=1e-10)
+    assert_allclose(numpy.dot(operator.T, operator), numpy.eye(n), atol=1e-10)
+    #  tightframe
+    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, n, l, numdata, operatortype="tightframe")
+    assert_allclose(numpy.dot(operator.T, operator), numpy.eye(n), atol=1e-10)
+    #  given operator
+    op = numpy.random.randn(N,n)
+    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, N, l, numdata, operatortype=op)
+    assert_array_equal(operator, op)
+
+    # Check data
+    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, N, l, numdata, "randn")
+    #  check shapes
+    assert_equal(data.shape, (n, numdata), "data shape mismatch")
+    assert_equal(operator.shape, (N, n), "operator shape mismatch")
+    assert_equal(gamma.shape, (N, numdata), "gamma shape mismatch")
+    assert_equal(cosupport.shape, (l, numdata), "cosupport shape mismatch")
+    #  check multiplication
+    assert_allclose(gamma, numpy.dot(operator, data), atol=1e-10)
+    #
+    for i in range(numdata):
+        assert(numpy.all(gamma[cosupport[:, i], i]) == 0) # check if all cosupport is zero
+        inonzero = numpy.setdiff1d(range(N), cosupport[:, i])
+        assert(numpy.all(gamma[inonzero, i])) # check if all non-zeros are non-zero
+
+
+def test_make_analysis_compressed_sensing_problem():
+    m = 10
+    N, n = 30, 20
+    l = 15
+    numdata = 10
+
+    assert_raises(ValueError, make_analysis_compressed_sensing_problem, m, n, N, l, numdata, "randn", "somethingwrong")
+    P = numpy.random.randn(m,n)
+    assert_raises(ValueError, make_analysis_compressed_sensing_problem, m+1, n, N, l, numdata, "randn", P)
+
+    measurements, acqumatrix, data, operator, gamma, cosupport = \
+        make_analysis_compressed_sensing_problem(m, n, N, l, numdata, "randn", "randn")
+
+    assert_equal(measurements.shape, (m,numdata))
     assert_equal(acqumatrix.shape, (m,n))
     assert_array_equal(measurements, numpy.dot(acqumatrix, data))
