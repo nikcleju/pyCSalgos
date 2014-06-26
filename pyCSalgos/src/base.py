@@ -29,7 +29,25 @@ class SparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
 #        self.y_ = y
 #        self.A_ = A
 #        self.coef_ = None
-        
+
     @abstractmethod
     def solve(self, data, dictionary):
+        """Run the solver"""
+
+
+class AnalysisSparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
+    """
+    Base class for all solvers
+
+    Notes (from scikit-learn):
+    -----
+    All estimators should specify all the parameters that can be set
+    at the class level in their __init__ as explicit keyword
+    arguments (no *args, **kwargs).
+    """
+
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def solve(self, measurements, acqumatrix, operator):
         """Run the solver"""
