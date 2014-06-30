@@ -12,6 +12,7 @@ from pyCSalgos.sl0 import SmoothedL0
 from pyCSalgos.tst import TwoStageThresholding
 from pyCSalgos.analysisl1min import AnalysisL1Min
 from pyCSalgos.analysis_by_synthesis import AnalysisBySynthesis
+from pyCSalgos.gap import GreedyAnalysisPursuit
 
 
 def run_synthesis():
@@ -41,7 +42,8 @@ def run_analysis():
                                  [AnalysisL1Min(1e-6),
                                   AnalysisBySynthesis(L1Min(1e-6)),
                                   AnalysisBySynthesis(OrthogonalMatchingPursuit(1e-6, algorithm="sparsify_QR")),
-                                  AnalysisBySynthesis(SmoothedL0(1e-6))])
+                                  AnalysisBySynthesis(SmoothedL0(1e-6)),
+                                  GreedyAnalysisPursuit(1e-6)])
     pt.run()
     pt.plot()
 
@@ -49,5 +51,5 @@ def run_analysis():
 
 
 if __name__ == "__main__":
-    run_synthesis()
+    #run_synthesis()
     run_analysis()
