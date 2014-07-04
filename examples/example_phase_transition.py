@@ -5,14 +5,16 @@ An example of generating a phase transition plot
 """
 
 import numpy
-from pyCSalgos.phase_transition import SynthesisPhaseTransition, AnalysisPhaseTransition
-from pyCSalgos.omp import OrthogonalMatchingPursuit
-from pyCSalgos.l1min import L1Min
-from pyCSalgos.sl0 import SmoothedL0
-from pyCSalgos.tst import TwoStageThresholding
-from pyCSalgos.analysisl1min import AnalysisL1Min
-from pyCSalgos.analysis_by_synthesis import AnalysisBySynthesis
-from pyCSalgos.gap import GreedyAnalysisPursuit
+from pyCSalgos import SynthesisPhaseTransition
+from pyCSalgos import AnalysisPhaseTransition
+from pyCSalgos import OrthogonalMatchingPursuit
+from pyCSalgos import L1Min
+from pyCSalgos import SmoothedL0
+from pyCSalgos import TwoStageThresholding
+from pyCSalgos import AnalysisL1Min
+from pyCSalgos import AnalysisBySynthesis
+from pyCSalgos import GreedyAnalysisPursuit
+from pyCSalgos import UnconstrainedAnalysisPursuit
 
 
 def run_synthesis():
@@ -47,9 +49,23 @@ def run_analysis():
     pt.run()
     pt.plot()
 
+def run_uap():
+    signal_size, dict_size = 50, 70
+    deltas = numpy.arange(0.1, 0.9, 0.1)
+    rhos = numpy.arange(0.1, 0.9, 0.1)
+
+    print "Running analysis phase transition..."
+    pt = AnalysisPhaseTransition(signal_size, dict_size, deltas, rhos, 3,
+                                 [UnconstrainedAnalysisPursuit(1e-6, 1, 1),
+                                  GreedyAnalysisPursuit(1e-6)])
+    pt.run()
+    pt.plot()
+
+
     print "Example finished."
 
 
 if __name__ == "__main__":
     #run_synthesis()
-    run_analysis()
+    #run_analysis()
+    run_uap()
