@@ -95,7 +95,15 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
         if 1:
             while True:
                 alpha = math.sqrt(lagmult)
-                xhat = np.linalg.lstsq(np.concatenate((M, alpha*Omega[Lambdahat,:])), np.concatenate((y, np.zeros(Lambdahat.size))))[0]
+
+                # Build augmented matrix and measurements vector
+                Omega_tilde = np.concatenate((M, alpha*Omega[Lambdahat,:]))
+                y_tilde = np.concatenate((y, np.zeros(Lambdahat.size)))
+
+                # Solve least-squares problem
+                xhat = np.linalg.lstsq(Omega_tilde, y_tilde)[0]
+
+                # Check tolerance below required, and adjust Lagr multiplier accordingly
                 temp = np.linalg.norm(y - np.dot(M,xhat), 2)
                 if temp <= params['noise_level']:
                     was_feasible = True
@@ -112,6 +120,7 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
                 if lagmult < lagmultmin or lagmult > lagmultmax:
                     break
                 xprev = xhat.copy()
+
             arepr = np.dot(Omega[Lambdahat, :], xhat)
             return xhat,arepr,lagmult
 
