@@ -6,16 +6,11 @@ Tests for generate.py
 # License: BSD 3 clause
 
 import numpy
-from numpy.testing import assert_equal
-from numpy.testing import assert_array_equal
 from numpy.testing import assert_array_almost_equal
-
 from sklearn.utils.testing import assert_raises
-from sklearn.utils.testing import assert_true
 from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_array_equal
 from sklearn.utils.testing import assert_allclose
-from sklearn.utils.testing import assert_warns
 
 from generate import make_sparse_coded_signal
 from generate import make_compressed_sensing_problem

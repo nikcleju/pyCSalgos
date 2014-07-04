@@ -9,7 +9,6 @@ Testing functions for tst.py
 # License: BSD 3 clause
 
 import numpy as np
-
 from sklearn.utils.testing import assert_raises
 from sklearn.utils.testing import assert_true
 from sklearn.utils.testing import assert_equal
@@ -19,11 +18,11 @@ from generate import make_sparse_coded_signal
 from tst import TwoStageThresholding
 
 n, N, k, Ndata = 20,30,3,10
-rng = np.random.RandomState(47)
+#rng = np.random.RandomState(47)
 
 SolverClass = TwoStageThresholding
 
-X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata)
+X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, random_state=47)
 
 maxiter = 300
 algorithms = ["recommended"]

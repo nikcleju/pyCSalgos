@@ -9,23 +9,20 @@ Testing functions for l1min.py
 # License: BSD 3 clause
 
 import numpy as np
-
 from sklearn.utils.testing import assert_raises
 from sklearn.utils.testing import assert_true
 from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_allclose
-from sklearn.utils.testing import assert_warns
-
 
 from generate import make_sparse_coded_signal
 from l1min import L1Min
 
 n, N, k, Ndata = 20,30,3,10
-rng = np.random.RandomState(47)
+#rng = np.random.RandomState(47)
 
 SolverClass = L1Min
 
-X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata)
+X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, random_state=47)
 tol = 1e-6
 
 algorithms = ["l1magic"]

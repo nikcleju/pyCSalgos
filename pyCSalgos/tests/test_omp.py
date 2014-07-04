@@ -11,9 +11,9 @@ Heavily inspired from test_omp in scikit-learn, copyrighted Vlad Niculae
 
 # TODO: test underlying function directly instead of class?
 
-import numpy as np
 import scipy
 
+import numpy as np
 from sklearn.utils.testing import assert_raises
 from sklearn.utils.testing import assert_true
 from sklearn.utils.testing import assert_equal
@@ -21,16 +21,16 @@ from sklearn.utils.testing import assert_array_equal
 from sklearn.utils.testing import assert_allclose
 from sklearn.utils.testing import assert_warns
 
-
 from generate import make_sparse_coded_signal
 from omp import OrthogonalMatchingPursuit
+
 
 n, N, k, Ndata = 20,30,3,10
 rng = np.random.RandomState(47)
 
 SolverClass = OrthogonalMatchingPursuit
 
-X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata)
+X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, random_state=47)
 tol = 1e-6
 
 algorithms = ["sklearn", "sklearn_local", "sparsify_QR", "sturm_QR"]
@@ -86,7 +86,7 @@ def subtest_perfect_support_recovery(stopval, algorithm):
     # check support only when stopping criterion = fixed sparsity
     # otherwise might get very small but non-zero coefficients
     omp = SolverClass(stopval = stopval, algorithm=algorithm)
-    notused, Dortho, gammaortho, supportortho = make_sparse_coded_signal(n, n, k, Ndata)
+    notused, Dortho, gammaortho, supportortho = make_sparse_coded_signal(n, n, k, Ndata, random_state=48)
     Dortho = scipy.linalg.orth(Dortho)
     Xortho = np.dot(Dortho, gammaortho)
     coef = omp.solve(Xortho, Dortho)
@@ -104,7 +104,7 @@ def test_perfect_signal_recovery():
 
 def subtest_perfect_signal_recovery(stopval, algorithm):
     omp = SolverClass(stopval = stopval, algorithm=algorithm)
-    coef = omp.solve(X,D)
+    coef = omp.solve(X, D)
     assert_allclose(gamma, coef, atol=1e-6)
 
 

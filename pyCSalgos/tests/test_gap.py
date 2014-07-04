@@ -9,22 +9,20 @@ Testing functions for gap.py
 # License: BSD 3 clause
 
 import numpy as np
-
 from sklearn.utils.testing import assert_raises
 from sklearn.utils.testing import assert_true
 from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_allclose
-from sklearn.utils.testing import assert_warns
 
 from generate import make_analysis_compressed_sensing_problem
 from gap import GreedyAnalysisPursuit
 
 m, N, n, l, numdata = 16, 25, 20, 18, 10
-rng = np.random.RandomState(47)
+#rng = np.random.RandomState(47)
 
 SolverClass = GreedyAnalysisPursuit
 
-measurements, acqumatrix, data, operator, gamma, cosupport = make_analysis_compressed_sensing_problem(m,n,N,l, numdata)
+measurements, acqumatrix, data, operator, gamma, cosupport = make_analysis_compressed_sensing_problem(m,n,N,l, numdata, random_state=47)
 tol = 1e-6
 
 

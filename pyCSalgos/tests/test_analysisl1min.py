@@ -9,22 +9,20 @@ Testing functions for analysisl1min.py
 # License: BSD 3 clause
 
 import numpy as np
-
 from sklearn.utils.testing import assert_raises
 from sklearn.utils.testing import assert_true
 from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_allclose
-from sklearn.utils.testing import assert_warns
 
 from generate import make_analysis_compressed_sensing_problem
 from analysisl1min import AnalysisL1Min
 
 m, N, n, l, numdata = 16, 25, 20, 18, 10
-rng = np.random.RandomState(47)
+#rng = np.random.RandomState(47)
 
 SolverClass = AnalysisL1Min
 
-measurements, acqumatrix, data, operator, gamma, cosupport = make_analysis_compressed_sensing_problem(m,n,N,l, numdata)
+measurements, acqumatrix, data, operator, gamma, cosupport = make_analysis_compressed_sensing_problem(m,n,N,l, numdata, random_state=47)
 tol = 1e-6
 
 algorithms = ["nesta"]
@@ -66,7 +64,7 @@ def test_perfect_signal_recovery():
 def subtest_perfect_signal_recovery(stopval, algorithm):
     solver = SolverClass(stopval = stopval, algorithm=algorithm)
     recdata = solver.solve(measurements, acqumatrix, operator)
-    assert_allclose(data, recdata, atol=1e-4)
+    assert_allclose(data, recdata, atol=1e-3)
 
 
 # def test_solver_reaches_least_squares():
