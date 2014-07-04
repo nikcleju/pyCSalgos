@@ -28,7 +28,7 @@ def make_sparse_coded_signal(n,N,k,Ndata, dictionary="randn", use_sklearn=True, 
 
     if dictionary == "randn" and use_sklearn and has_sklearn_datasets:
         # use random normalized dictionary from scikit-learn
-        X, D, gamma = sklearn.datasets.make_sparse_coded_signal(n_samples=Ndata, n_features=n, n_components=N, n_nonzero_coefs=k)
+        X, D, gamma = sklearn.datasets.make_sparse_coded_signal(n_samples=Ndata, n_features=n, n_components=N, n_nonzero_coefs=k, random_state=rng)
         for i in range(Ndata):
             support[:, i] = numpy.nonzero(gamma[:,i])[0]
 
