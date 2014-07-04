@@ -12,6 +12,9 @@ from base import AnalysisSparseSolver
 
 
 class AnalysisL1Min(AnalysisSparseSolver):
+    """
+    Analysis-based :math:`\ell_1` minimization
+    """
 
     # All parameters related to the algorithm itself are given here.
     # The data and dictionary are given to the solve() method
