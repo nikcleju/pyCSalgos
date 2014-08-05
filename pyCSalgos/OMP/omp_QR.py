@@ -837,5 +837,5 @@ def omp_qr(x, dict, D, natom, tolerance):
     w = scipy.linalg.solve_triangular(tempR,origprojectionsT[gamma[0:k]],trans=1)
     x_hat = np.zeros((dictsize,1))
     x_hat[gamma[0:k]] = scipy.linalg.solve_triangular(tempR,w)
-
+    #TODO: change names (x_hat = gamma, gamma = support)
     return x_hat, gamma
