@@ -24,6 +24,22 @@ import scipy
 
 class OrthogonalMatchingPursuit(SparseSolver):
     """
+    Performs sparse coding cia Orthogonal Matching Pursuit (OMP)
+
+    All synthesis solvers are derived from this class, and implement a solve() method that performs the actual solving.
+
+    Tips for writing your own solver:
+        - Derive from SparseSolver (or AnalysisSparseSolver if appropriate).
+    - All parameters should be set in the derived class' __init__(). A solver object should hold all
+        the parameters required for solving, but not the actual data or the results.
+    - Implement solve() method. This takes the data and provides the result. Nothing is stored in the solver object.
+
+    Other notes (from scikit-learn):
+    -----
+    All estimators should specify all the parameters that can be set
+    at the class level in their __init__ as explicit keyword
+    arguments (no *args, **kwargs).
+
     Attention: compressed sensing problems shouldn't use sklearn's OMP because it assumes that the dictionary
      is normalized, which is not the case with the effective dictionary P*D
      Better use "sparsify_QR" instead.
