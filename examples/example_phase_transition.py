@@ -51,8 +51,8 @@ def run_analysis():
 
 def run_uap():
     signal_size, dict_size = 50, 70
-    deltas = numpy.arange(0.1, 0.9, 0.1)
-    rhos = numpy.arange(0.1, 0.9, 0.1)
+    deltas = numpy.arange(0.1, 1, 0.1)
+    rhos = numpy.arange(0.1, 1, 0.1)
 
     print "Running analysis phase transition..."
     pt = AnalysisPhaseTransition(signal_size, dict_size, deltas, rhos, 3,
@@ -67,5 +67,5 @@ def run_uap():
 
 if __name__ == "__main__":
     #run_synthesis()
-    #run_analysis()
-    run_uap()
+    run_analysis()
+    #run_uap()
