@@ -36,7 +36,6 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         Runs
         """
 
-    # TODO change parameter 'data' to something more ok
     def plot(self, subplot=True, solve=True, check=False):
         #plt.ion() # Turn interactive off
 
@@ -92,10 +91,10 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
             #for i, solver in enumerate(data.keys()):
             for i, solver in enumerate(self.solvers):
                 if subplot:
-                    plt.subplot(*(subplotlayout+(i+1,)))
+                    ax = plt.subplot(*(subplotlayout+(i+1,)))
                 else:
-                    plt.figure()
-                plot_phase_transition(data[solver])
+                    ax = plt.figure()
+                plot_phase_transition(data[solver].T)
                 plt.title(solver)
                 plt.xlabel(r"$\delta$")
                 plt.ylabel(r"$\rho$")
@@ -105,8 +104,25 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
 
     #TODO: save()
 
+    def computeAverageError(self,shape):
+        """
+        Returns an array same shape as 'solvers' array, containing the average value of the phase transition
+        """
+        return np.array([[np.mean(self.avgerr[solver]) for solver in linesolvers]
+                         for linesolvers in np.atleast_2d(self.solvers)]).reshape(shape)
+    def plotAverageError(self,shape):
+        """
+        Plots an array same shape as 'solvers' array, containing the average value of the phase transition
+        """
+        plt.figure()
+        values = self.computeAverageError(shape)
+        values = values - np.min(values) # translate minimum to 0
+        values = values / np.max(values) # translate maximum to 1
+        plot_phase_transition(values)
+        plt.show()
 
 class SynthesisPhaseTransition(PhaseTransition):
+
     """
     Class for running and plotting synthesis-based phase transitions
     """
@@ -215,5 +231,4 @@ def plot_phase_transition(matrix):
 
     # plt.figure()
     # Transpose the data so first axis = horizontal, use inverse colormap so small(good) = white, origin = lower left
-    plt.imshow(bigmatrix.T, cmap=cm.gray_r, norm=mcolors.Normalize(0, 1), interpolation='nearest', origin='lower')
-
+    plt.imshow(bigmatrix, cmap=cm.gray_r, norm=mcolors.Normalize(0, 1), interpolation='nearest', origin='lower')
