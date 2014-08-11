@@ -34,7 +34,8 @@ class UnconstrainedAnalysisPursuit(AnalysisSparseSolver):
         self.lambda2 = lambda2
 
     def __str__(self):
-        return "UnconstrainedAnalysisPursuit(" + str(self.stopval) + ', ' + str(self.lambda1) + ', ' + str(self.lambda2) + ")"
+        #return "UnconstrainedAnalysisPursuit(" + str(self.stopval) + ', ' + str(self.lambda1) + ', ' + str(self.lambda2) + ")"
+        return "UAP(" + str(self.stopval) + ', ' + str(self.lambda1) + ', ' + str(self.lambda2) + ")"
 
 
     def solve(self, measurements, acqumatrix, operator):
@@ -86,6 +87,10 @@ def unconstrained_analysis_pursuit(measurements, acqumatrix, operator, lambda1, 
 
         # Remove selected rows
         Lambdahat = np.setdiff1d(Lambdahat, maxrow)
+
+        # Another exit condition
+        if Lambdahat.size == 0:
+            break
 
     # Debias (project gamma onto columns of operator)
     gamma = np.dot(np.dot(operator, OmegaPinv), gamma)
