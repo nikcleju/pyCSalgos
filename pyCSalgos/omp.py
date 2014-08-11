@@ -7,7 +7,7 @@ Provides Orthogonal Matching Pursuit (OMP)
 # Author: Nicolae Cleju
 # License: BSD 3 clause
 
-from base import SparseSolver
+from base import SparseSolver, ERCcheckMixin
 
 try:
     import sklearn.linear_model
@@ -22,7 +22,7 @@ import math
 import numpy as np
 import scipy
 
-class OrthogonalMatchingPursuit(SparseSolver):
+class OrthogonalMatchingPursuit(ERCcheckMixin, SparseSolver):
     """
     Performs sparse coding cia Orthogonal Matching Pursuit (OMP)
 
@@ -65,6 +65,32 @@ class OrthogonalMatchingPursuit(SparseSolver):
 
     def solve(self, data, dictionary):
         return _orthogonal_matching_pursuit(data, dictionary, self.stopval, self.algorithm)
+
+    def checkERC(self, acqumatrix, dictoper, support):
+
+        D = np.dot(acqumatrix, dictoper)
+
+        # Should normalize here the dictionary or not?
+        for i in range(D.shape[1]):
+            D[:,i] = D[:,i] / np.linalg.norm((D[:,i],2))
+
+        dict_size = dictoper.shape[1]
+        k = support.shape[0]
+        num_data = support.shape[1]
+        results = np.zeros(num_data, dtype=bool)
+
+        for i in range(num_data):
+            T = support[:,i]
+            Tc = np.setdiff1d(range(dict_size), T)
+            A = np.dot(D[:,Tc].T, np.linalg.pinv(D[:,T].T))
+            assert(A.shape == (dict_size-k, k))
+
+            linf = np.max(np.sum(np.abs(A),1))
+            if linf < 1:
+                results[i] = True
+            else:
+                results[i] = False
+        return results
 
 
 class StopCriterion:

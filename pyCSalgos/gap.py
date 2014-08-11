@@ -12,10 +12,10 @@ import scipy
 
 import numpy as np
 
-from base import AnalysisSparseSolver
+from base import AnalysisSparseSolver, ERCcheckMixin
 
 
-class GreedyAnalysisPursuit(AnalysisSparseSolver):
+class GreedyAnalysisPursuit(ERCcheckMixin, AnalysisSparseSolver):
 
     # All parameters related to the algorithm itself are given here.
     # The data and dictionary are given to the run() method
@@ -53,6 +53,33 @@ class GreedyAnalysisPursuit(AnalysisSparseSolver):
                                                     gapparams, np.zeros(operator.shape[1]))[0]
         return np.squeeze(outdata)
 
+    def checkERC(self, acqumatrix, dictoper, support):
+
+        # Should normalize here the operator or not?
+
+        [operatorsize, signalsize] = dictoper.shape
+        U,S,Vt = np.linalg.svd(acqumatrix)
+        N = Vt[-(operatorsize-signalsize):, :]
+
+        k = support.shape[0]
+        l = operatorsize - k
+        num_data = support.shape[1]
+        results = np.zeros(num_data, dtype=bool)
+
+        for i in range(num_data):
+            LambdaC = support[:,i]
+            Lambda = np.setdiff1d(range(operatorsize), LambdaC)
+            A = np.dot(
+                np.linalg.pinv(np.dot(N, dictoper[Lambda,:].T)),
+                np.dot(N, dictoper[LambdaC,:].T))
+            assert(A.shape == (l, k))
+
+            linf = np.max(np.sum(np.abs(A),1)) # L_infty,infty matrix norm
+            if linf < 1:
+                results[i] = True
+            else:
+                results[i] = False
+        return results
 
 
 
