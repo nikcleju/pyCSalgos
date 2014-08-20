@@ -14,8 +14,8 @@ from sklearn.utils.testing import assert_true
 from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_allclose
 
-from generate import make_sparse_coded_signal
-from tst import TwoStageThresholding
+from ..generate import make_sparse_coded_signal
+from ..tst import TwoStageThresholding
 
 n, N, k, Ndata = 20,30,3,10
 #rng = np.random.RandomState(47)

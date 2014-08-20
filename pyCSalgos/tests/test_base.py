@@ -16,7 +16,7 @@ from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_raises
 from sklearn.utils import deprecated
 
-from base import SparseSolver
+from ..base import SparseSolver
 
 
 

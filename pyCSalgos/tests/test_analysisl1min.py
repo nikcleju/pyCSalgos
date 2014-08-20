@@ -14,8 +14,8 @@ from sklearn.utils.testing import assert_true
 from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_allclose
 
-from generate import make_analysis_compressed_sensing_problem
-from analysisl1min import AnalysisL1Min
+from ..generate import make_analysis_compressed_sensing_problem
+from ..analysisl1min import AnalysisL1Min
 
 m, N, n, l, numdata = 16, 25, 20, 18, 10
 #rng = np.random.RandomState(47)

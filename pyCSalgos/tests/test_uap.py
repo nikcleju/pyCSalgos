@@ -14,8 +14,8 @@ from sklearn.utils.testing import assert_true
 from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_allclose
 
-from generate import make_analysis_compressed_sensing_problem
-from uap import UnconstrainedAnalysisPursuit
+from ..generate import make_analysis_compressed_sensing_problem
+from ..uap import UnconstrainedAnalysisPursuit
 
 m, N, n, l, numdata = 16, 25, 20, 18, 10
 lambda1 = 1.0

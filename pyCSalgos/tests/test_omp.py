@@ -21,8 +21,8 @@ from sklearn.utils.testing import assert_array_equal
 from sklearn.utils.testing import assert_allclose
 from sklearn.utils.testing import assert_warns
 
-from generate import make_sparse_coded_signal
-from omp import OrthogonalMatchingPursuit
+from ..generate import make_sparse_coded_signal
+from ..omp import OrthogonalMatchingPursuit
 
 
 n, N, k, Ndata = 20,30,3,10

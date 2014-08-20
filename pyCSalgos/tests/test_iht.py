@@ -1,7 +1,7 @@
 """
-test_gap.py
+test_iht.py
 
-Testing functions for gap.py
+Testing functions for iht.py
 
 """
 
@@ -14,53 +14,56 @@ from sklearn.utils.testing import assert_true
 from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_allclose
 
-from ..generate import make_analysis_compressed_sensing_problem
-from ..gap import GreedyAnalysisPursuit
+from ..generate import make_sparse_coded_signal
+from ..iht import IterativeHardThresholding
 
-m, N, n, l, numdata = 16, 25, 20, 18, 10
+n, N, k, Ndata = 20,30,3,10
 #rng = np.random.RandomState(47)
 
-SolverClass = GreedyAnalysisPursuit
+SolverClass =IterativeHardThresholding
 
-measurements, acqumatrix, data, operator, gamma, cosupport = make_analysis_compressed_sensing_problem(m,n,N,l, numdata, random_state=47)
-tol = 1e-6
+X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, random_state=47)
+realdict = {'data':X, 'gamma':gamma, 'support':support}
 
+maxiter = 70000
+sparsity = "real"
 
 def test_correct_shapes():
-    stopvals = [1e-6, 0]
+    stopvals = [1e-10]
     for stopval in stopvals:
         yield subtest_correct_shapes, stopval
 
 def subtest_correct_shapes(stopval):
-    solver = SolverClass(stopval = stopval)
+    solver = SolverClass(sparsity=sparsity, stoptol=stopval, maxiter=maxiter)
     # single vector
-    recdata = solver.solve(measurements[:,0], acqumatrix, operator)
-    assert_equal(recdata.shape, (n,))
+    coef = solver.solve(X[:,0], D, realdict)
+    assert_equal(coef.shape, (N,))
     # multiple vectors
-    recdata = solver.solve(measurements, acqumatrix, operator)
-    assert_equal(recdata.shape, (n, numdata))
+    coef = solver.solve(X, D, realdict)
+    assert_equal(coef.shape, (N, Ndata))
 
 
 def test_tol():
-    stopvals = [1e-6, 0]
+    stopvals = [1e-10]
     for stopval in stopvals:
         yield subtest_tol, stopval
 
 def subtest_tol(stopval):
-    solver = SolverClass(stopval = stopval)
-    recdata = solver.solve(measurements, acqumatrix, operator)
-    for i in range(data.shape[1]):
-        assert_true(np.sum((measurements[:, i] - np.dot(acqumatrix, recdata[:,i])) ** 2) <= max(stopval, 1e-6))
+    solver = SolverClass(sparsity=sparsity, stoptol = stopval, maxiter=maxiter)
+    coef = solver.solve(X, D, realdict)
+    for i in range(X.shape[1]):
+        assert_true(np.sum((X[:, i] - np.dot(D, coef[:,i])) ** 2) <= max(stopval, 1e-6))
+
 
 def test_perfect_signal_recovery():
-    stopvals = [1e-6, 0]
+    stopvals = [1e-10]
     for stopval in stopvals:
         yield subtest_perfect_signal_recovery, stopval
 
 def subtest_perfect_signal_recovery(stopval):
-    solver = SolverClass(stopval = stopval)
-    recdata = solver.solve(measurements, acqumatrix, operator)
-    assert_allclose(data, recdata, atol=1e-4)
+    solver = SolverClass(sparsity=sparsity, stoptol = stopval, maxiter=maxiter)
+    coef = solver.solve(X,D, realdict)
+    assert_allclose(gamma, coef, atol=1e-4)
 
 
 # def test_solver_reaches_least_squares():
@@ -81,7 +84,8 @@ def subtest_perfect_signal_recovery(stopval):
 
 
 def test_bad_input():
-    assert_raises(ValueError, SolverClass, stopval=-1)
+    assert_raises(ValueError, SolverClass, stoptol=-1, maxiter=300)
+    assert_raises(ValueError, SolverClass, stoptol=1e-6, maxiter=0)
 
 
 
@@ -110,3 +114,5 @@ def test_bad_input():
 #     #gamma_hat = orthogonal_mp(X, new_y, 2)
 #     gamma_hat = SolverClass(stopval=1e-3).solve(new_y, D)
 #     assert_array_equal(np.flatnonzero(gamma_hat), [0, 21])
+
+

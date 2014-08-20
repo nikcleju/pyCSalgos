@@ -12,10 +12,10 @@ from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_array_equal
 from sklearn.utils.testing import assert_allclose
 
-from generate import make_sparse_coded_signal
-from generate import make_compressed_sensing_problem
-from generate import make_cosparse_coded_signal
-from generate import make_analysis_compressed_sensing_problem
+from ..generate import make_sparse_coded_signal
+from ..generate import make_compressed_sensing_problem
+from ..generate import make_cosparse_coded_signal
+from ..generate import make_analysis_compressed_sensing_problem
 
 
 def test_make_sparse_coded_signal():
@@ -103,18 +103,18 @@ def test_make_cosparse_coded_signal():
     assert_raises(ValueError, make_cosparse_coded_signal, n, N+1, l, numdata, numpy.random.randn(N,n))
     assert_raises(ValueError, make_cosparse_coded_signal, n, N, l, numdata, "somethingwrong")
     #  normalization
-    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, n, l, numdata, operatortype="randn")
+    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, n, l, numdata, operator="randn")
     assert_allclose(numpy.sqrt(numpy.sum(operator**2, axis=1)), numpy.ones(n), atol=1e-10)
     #  orthonormality
-    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, n, l, numdata, operatortype="orthonormal")
+    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, n, l, numdata, operator="orthonormal")
     assert_allclose(numpy.dot(operator, operator.T), numpy.eye(n), atol=1e-10)
     assert_allclose(numpy.dot(operator.T, operator), numpy.eye(n), atol=1e-10)
     #  tightframe
-    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, n, l, numdata, operatortype="tightframe")
+    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, n, l, numdata, operator="tightframe")
     assert_allclose(numpy.dot(operator.T, operator), numpy.eye(n), atol=1e-10)
     #  given operator
     op = numpy.random.randn(N,n)
-    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, N, l, numdata, operatortype=op)
+    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, N, l, numdata, operator=op)
     assert_array_equal(operator, op)
 
     # Check data
