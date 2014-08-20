@@ -32,7 +32,7 @@ class TwoStageThresholding(SparseSolver):
     def __str__(self):
         return "TST ("+str(self.stoptol)+" | " + str(self.maxiter) + ", " + str(self.algorithm)+")"
 
-    def solve(self, data, dictionary):
+    def solve(self, data, dictionary, realdict=None):
         return two_stage_thresholding(data, dictionary, self.stoptol, self.maxiter, self.algorithm)
 
 def two_stage_thresholding(data, dictionary, stoptol, maxiter, algorithm="recommended"):

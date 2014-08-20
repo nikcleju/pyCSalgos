@@ -36,7 +36,7 @@ class SparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
     __metaclass__ = ABCMeta
     
     @abstractmethod
-    def solve(self, data, dictionary):
+    def solve(self, data, dictionary, realdict=None):
         """
         Performs the solving
 

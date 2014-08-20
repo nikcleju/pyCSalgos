@@ -26,7 +26,7 @@ class SmoothedL0(SparseSolver):
         return "SmoothedL0 ("+str(self.stopval)+", "+str(self.algorithm)+")"
 
 
-    def solve(self, data, dictionary):
+    def solve(self, data, dictionary, realdict=None):
         return sl0(data, dictionary, self.stopval, self.algorithm)
 
 

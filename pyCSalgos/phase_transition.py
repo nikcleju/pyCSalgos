@@ -36,18 +36,29 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         Runs
         """
 
-    def plot(self, subplot=True, solve=True, check=False):
+    def plot(self, subplot=True, solve=True, check=False, thresh=None):
         #plt.ion() # Turn interactive off
 
         if solve == False and check==False:
             RuntimeError('Nothing to plot (both solve and check are False)')
 
         datasources = []
+
         if solve is True:
-            if self.avgerr is None:
+            if self.err is None:
                 ValueError("No data to plot (have you run()?)")
             else:
-                datasources.append(self.avgerr)
+                avgerr = dict|()
+                for solver in self.err:
+                    avgerr[solver] = numpy.zeros(self.err[solver].shape)
+                    for idelta in self.err.shape[0]:
+                        for irho in self.err.shape[1]:
+                            if thresh is None:
+                                avgerr[solver][idelta, irho] = np.mean(self.err[solver][idelta, irho])
+                            else:
+                                avgerr[solver][idelta, irho] = np.count_nonzero(self.err[solver][idelta, irho] < thresh) / self.err[solver][idelta, irho].size
+                datasources.append(avgerr)
+
         if check is True:
             if self.avgERCsuccess is None:
                 ValueError("No data to plot (have you check()-ed?)")
@@ -91,10 +102,12 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
             #for i, solver in enumerate(data.keys()):
             for i, solver in enumerate(self.solvers):
                 if subplot:
+                    # simulate column-major order to have
+                    #correctpos = i // subplotlayout[0] + (i % subplotlayout[0])*subplotlayout[1]
                     ax = plt.subplot(*(subplotlayout+(i+1,)))
                 else:
                     ax = plt.figure()
-                plot_phase_transition(data[solver].T)
+                plot_phase_transition(data[solver])
                 plt.title(solver)
                 plt.xlabel(r"$\delta$")
                 plt.ylabel(r"$\rho$")
@@ -109,7 +122,8 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         Returns an array same shape as 'solvers' array, containing the average value of the phase transition
         """
         return np.array([[np.mean(self.avgerr[solver]) for solver in linesolvers]
-                         for linesolvers in np.atleast_2d(self.solvers)]).reshape(shape)
+                         for linesolvers in np.atleast_2d(self.solvers)]).reshape(shape, order='C')
+
     def plotAverageError(self,shape):
         """
         Plots an array same shape as 'solvers' array, containing the average value of the phase transition
@@ -118,7 +132,7 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         values = self.computeAverageError(shape)
         values = values - np.min(values) # translate minimum to 0
         values = values / np.max(values) # translate maximum to 1
-        plot_phase_transition(values)
+        plot_phase_transition(values, transpose=False)
         plt.show()
 
 class SynthesisPhaseTransition(PhaseTransition):
@@ -154,17 +168,20 @@ class SynthesisPhaseTransition(PhaseTransition):
                     gen.make_compressed_sensing_problem(
                         m, self.signaldim, self.dictdim, k, self.numdata, "randn", "randn")
 
+                realdict = {'data':realdata, 'gamma':realgamma, 'support':realsupport}
+
                 for solver in self.solvers:
-                    if check is True:
+                    if check is True and hasattr(solver, 'checkERC'):
                         ERCsuccess = solver.checkERC(acqumatrix, dictionary, realsupport)
                         self.avgERCsuccess[solver][idelta, irho] = 1-np.mean(ERCsuccess) # 1- : correct = white
                     if solve is True:
-                        gamma = solver.solve(measurements, np.dot(acqumatrix, dictionary))
+                        gamma = solver.solve(measurements, np.dot(acqumatrix, dictionary), realdict)
                         data = np.dot(dictionary, gamma)
                         errors = data - realdata
                         for i in range(errors.shape[1]):
                             errors[:, i] = errors[:, i] / np.linalg.norm(realdata[:, i])
-                        self.avgerr[solver][idelta, irho] = np.mean(np.sqrt(sum(errors**2, 0)))
+                            self.err[solver][idelta, irho][i] = np.sqrt(sum(errors**2, 0))
+                        #self.avgerr[solver][idelta, irho] = np.mean(np.sqrt(sum(errors**2, 0)))
 
 # TODO: maybe needs refactoring, it's very similar to PhaseTransition()
 class AnalysisPhaseTransition(PhaseTransition):
@@ -216,7 +233,7 @@ class AnalysisPhaseTransition(PhaseTransition):
 
 
 # TODO: add many more parameters
-def plot_phase_transition(matrix):
+def plot_phase_transition(matrix, transpose=True):
 
     # restrict to [0, 1]
     np.clip(matrix, 0, 1, out=matrix)
@@ -228,6 +245,9 @@ def plot_phase_transition(matrix):
     for i in np.arange(rows):
         for j in np.arange(cols):
             bigmatrix[i*N:i*N+N,j*N:j*N+N] = matrix[i,j]
+
+    if transpose:
+        bigmatrix = bigmatrix.T
 
     # plt.figure()
     # Transpose the data so first axis = horizontal, use inverse colormap so small(good) = white, origin = lower left

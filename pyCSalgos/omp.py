@@ -63,7 +63,7 @@ class OrthogonalMatchingPursuit(ERCcheckMixin, SparseSolver):
     def __str__(self):
         return "OMP ("+str(self.stopval)+", "+str(self.algorithm)+")"
 
-    def solve(self, data, dictionary):
+    def solve(self, data, dictionary, realdict=None):
         return _orthogonal_matching_pursuit(data, dictionary, self.stopval, self.algorithm)
 
     def checkERC(self, acqumatrix, dictoper, support):
