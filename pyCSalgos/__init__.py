@@ -11,6 +11,8 @@ from .omp import OrthogonalMatchingPursuit
 from .l1min import L1Min
 from .sl0 import SmoothedL0
 from .tst import TwoStageThresholding
+from .amp import ApproximateMessagePassing
+from .iht import IterativeHardThresholding
 
 from .analysisl1min import AnalysisL1Min
 from .gap import GreedyAnalysisPursuit
@@ -29,6 +31,8 @@ __all__ = ['make_sparse_coded_signal',
            'L1Min',
            'SmoothedL0',
            'TwoStageThresholding',
+           'ApproximateMessagePassing',
+           'IterativeHardThresholding',
            'AnalysisL1Min',
            'GreedyAnalysisPursuit',
            'AnalysisBySynthesis',
