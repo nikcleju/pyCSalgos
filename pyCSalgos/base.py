@@ -46,18 +46,6 @@ class SparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
         :return: The coefficient matrix. Each column is the decomposition of the corresponding data vector
          """
 
-    def checkERC(self, dictionary, support):
-        """
-        Checks Exact Recovery Condition (ERC), if any, of this solver for given support
-
-        :param dictionary: The dictionary, with columnwise atoms
-        :param support: A matrix containing, as columns, the support for each signal to check
-
-        :return: A vector of True/False containing the result of ERC check
-         """
-        RuntimeError("Solver "+ self +" does not have an ERC condition implemented")
-
-
 class AnalysisSparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
     """
     Base class for all analysis-based solvers

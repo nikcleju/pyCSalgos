@@ -25,10 +25,15 @@ def run_test():
 
     print "Running synthesis phase transition..."
     pt = SynthesisPhaseTransition(signal_size, dict_size, deltas, rhos, 3,
-                                  [OrthogonalMatchingPursuit(1e-6, algorithm="sparsify_QR"),
-                                    ])
-    pt.run()
-    pt.plot()
+                                  [
+                                  #    OrthogonalMatchingPursuit(1e-6, algorithm="sparsify_QR"),
+                                  #IterativeHardThresholding(1e-10, sparsity="real", maxiter=1000)
+                                  ApproximateMessagePassing(1e-6, 1000),
+                                  ])
+    pt.run(solve=True,check=True)
+    pt.plot(solve=True,check=True)
+
+    pt.plot(solve=True,check=False,thresh=1e-3)
 
     print "Example finished."
 
@@ -87,7 +92,16 @@ def run_uap():
 
 
 if __name__ == "__main__":
-    run_synthesis()
+
+    # Profile
+    #import profile
+    #profile.run('run_test()', 'profile.tmp')
+
+    #import pstats
+    #p = pstats.Stats('profile.tmp')
+    #p.sort_stats('cumulative').print_stats(10)
+
+    #run_synthesis()
     #run_analysis()
     #run_uap()
-    #run_test()
+    run_test()

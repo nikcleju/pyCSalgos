@@ -40,8 +40,8 @@ def two_stage_thresholding(data, dictionary, stoptol, maxiter, algorithm="recomm
     # Force data 2D
     if len(data.shape) == 1:
         data = np.atleast_2d(data)
-    if data.shape[0] < data.shape[1]:
-        data = np.transpose(data)
+        if data.shape[0] < data.shape[1]:
+            data = np.transpose(data)
 
     N = dictionary.shape[1]
     Ndata = data.shape[1]

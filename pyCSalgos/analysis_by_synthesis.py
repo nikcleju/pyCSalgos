@@ -40,7 +40,17 @@ class AnalysisBySynthesis(AnalysisSparseSolver):
         Atilde = np.vstack((np.dot(acqumatrix, dictionary), mul * nullspace))
         ytilde = np.concatenate((measurements, np.zeros((operatorsize-signalsize, measurements.shape[1]))))
 
-        return np.squeeze(np.dot(dictionary, self.synthsolver.solve(ytilde, Atilde)))
+        # #TODO: DEBUG HACK! UNDO QUICKLY!
+        # import pyCSalgos.OMP.omp_QR
+        # opts = dict()
+        # opts['stopCrit'] = 'mse'
+        # opts['stopTol'] = 1e-9
+        # verif = np.zeros((signalsize, ytilde.shape[1]))
+        # for i in range(ytilde.shape[1]):
+        #     verif[:,i] = np.dot(dictionary , pyCSalgos.OMP.omp_QR.greed_omp_qr(np.squeeze(ytilde[:,i]),Atilde,Atilde.shape[1],opts)[0])
+        # assert(np.linalg.norm(verif - np.dot(dictionary, self.synthsolver.solve(ytilde, Atilde))) < 1e-10)
+
+        return np.dot(dictionary, self.synthsolver.solve(ytilde, Atilde))
 
     def computeMultiplier(self, measurements, acqumatrix, operator):
         """

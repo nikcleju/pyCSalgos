@@ -15,6 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
+import scipy.io
 
 import generate as gen
 
@@ -27,7 +28,7 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         self.deltas = deltas
         self.rhos = rhos
         self.solvers = solvers
-        self.avgerr = None
+        self.err = None
         self.avgERCsuccess = None
 
     @abstractmethod
@@ -43,29 +44,35 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
             RuntimeError('Nothing to plot (both solve and check are False)')
 
         datasources = []
+        reverse_colormap = []
 
         if solve is True:
             if self.err is None:
                 ValueError("No data to plot (have you run()?)")
             else:
-                avgerr = dict|()
+                avgerr = dict()
                 for solver in self.err:
-                    avgerr[solver] = numpy.zeros(self.err[solver].shape)
-                    for idelta in self.err.shape[0]:
-                        for irho in self.err.shape[1]:
+                    avgerr[solver] = np.zeros((self.err[solver].shape[0], self.err[solver].shape[1]))
+                    for idelta in range(self.err[solver].shape[0]):
+                        for irho in range(self.err[solver].shape[1]):
                             if thresh is None:
                                 avgerr[solver][idelta, irho] = np.mean(self.err[solver][idelta, irho])
                             else:
-                                avgerr[solver][idelta, irho] = np.count_nonzero(self.err[solver][idelta, irho] < thresh) / self.err[solver][idelta, irho].size
+                                avgerr[solver][idelta, irho] = float(np.count_nonzero(self.err[solver][idelta, irho] < thresh)) / self.err[solver][idelta, irho].size
                 datasources.append(avgerr)
+                if thresh is None:
+                    reverse_colormap.append(True)
+                else:
+                    reverse_colormap.append(False)
 
         if check is True:
             if self.avgERCsuccess is None:
                 ValueError("No data to plot (have you check()-ed?)")
             else:
                 datasources.append(self.avgERCsuccess)
+                reverse_colormap.append(False)
 
-        for data in datasources:
+        for idatasource, data in enumerate(datasources):
             if subplot is False:
                 pass
             elif subplot is True:
@@ -107,7 +114,7 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
                     ax = plt.subplot(*(subplotlayout+(i+1,)))
                 else:
                     ax = plt.figure()
-                plot_phase_transition(data[solver])
+                plot_phase_transition(data[solver], reverse_colormap=reverse_colormap[idatasource])
                 plt.title(solver)
                 plt.xlabel(r"$\delta$")
                 plt.ylabel(r"$\rho$")
@@ -117,19 +124,30 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
 
     #TODO: save()
 
-    def computeAverageError(self,shape):
+    def computeAverageError(self,shape, thresh=None):
         """
         Returns an array same shape as 'solvers' array, containing the average value of the phase transition
         """
-        return np.array([[np.mean(self.avgerr[solver]) for solver in linesolvers]
+        # TODO: this repeats with part of plot(); to refactor and make single function
+        avgerr = dict()
+        for solver in self.err:
+            avgerr[solver] = np.zeros(self.err[solver].shape)
+            for idelta in self.err.shape[0]:
+                for irho in self.err.shape[1]:
+                    if thresh is None:
+                        avgerr[solver][idelta, irho] = np.mean(self.err[solver][idelta, irho])
+                    else:
+                        avgerr[solver][idelta, irho] = np.count_nonzero(self.err[solver][idelta, irho] < thresh) / self.err[solver][idelta, irho].size
+
+        return np.array([[np.mean(avgerr[solver]) for solver in linesolvers]
                          for linesolvers in np.atleast_2d(self.solvers)]).reshape(shape, order='C')
 
-    def plotAverageError(self,shape):
+    def plotAverageError(self,shape, thresh=None):
         """
         Plots an array same shape as 'solvers' array, containing the average value of the phase transition
         """
         plt.figure()
-        values = self.computeAverageError(shape)
+        values = self.computeAverageError(shape, thresh)
         values = values - np.min(values) # translate minimum to 0
         values = values / np.max(values) # translate maximum to 1
         plot_phase_transition(values, transpose=False)
@@ -150,9 +168,9 @@ class SynthesisPhaseTransition(PhaseTransition):
             RuntimeError('Nothing to run (both solve and check are False)')
 
         if solve is True:
-            self.avgerr = dict()
+            self.err = dict()
             for solver in self.solvers:
-                self.avgerr[solver] = np.zeros(shape=(len(self.deltas), len(self.rhos)))
+                self.err[solver] = np.zeros(shape=(len(self.deltas), len(self.rhos), self.numdata))
         if check is True:
             self.avgERCsuccess = dict()
             for solver in self.solvers:
@@ -180,7 +198,7 @@ class SynthesisPhaseTransition(PhaseTransition):
                         errors = data - realdata
                         for i in range(errors.shape[1]):
                             errors[:, i] = errors[:, i] / np.linalg.norm(realdata[:, i])
-                            self.err[solver][idelta, irho][i] = np.sqrt(sum(errors**2, 0))
+                            self.err[solver][idelta, irho][i] = np.sqrt(sum(errors[:,i]**2))
                         #self.avgerr[solver][idelta, irho] = np.mean(np.sqrt(sum(errors**2, 0)))
 
 # TODO: maybe needs refactoring, it's very similar to PhaseTransition()
@@ -198,9 +216,9 @@ class AnalysisPhaseTransition(PhaseTransition):
             RuntimeError('Nothing to run (both solve and check are False)')
 
         if solve is True:
-            self.avgerr = dict()
+            self.err = dict()
             for solver in self.solvers:
-                self.avgerr[solver] = np.zeros(shape=(len(self.deltas), len(self.rhos)))
+                self.err[solver] = np.zeros(shape=(len(self.deltas), len(self.rhos), self.numdata))
         if check is True:
             self.avgERCsuccess = dict()
             for solver in self.solvers:
@@ -209,12 +227,22 @@ class AnalysisPhaseTransition(PhaseTransition):
         for idelta, delta in enumerate(self.deltas):
             for irho, rho in enumerate(self.rhos):
                 m = int(round(self.signaldim * delta, 0))  # delta = m/n
-                l = self.signaldim - int(round(m * rho, 0))             # rho = (n-l)/m
+                l = self.signaldim - int(round(m * rho, 0))    # rho = (n-l)/m
+                #l = int(round(self.signaldim - m * rho, 0))  #TODO: DEBUG, TO CHECK IF THE SAME!!
 
-                #TODO: make operator only once
+               #TODO: make operator only once
                 measurements, acqumatrix, realdata, operator, realgamma, realcosupport = \
                     gen.make_analysis_compressed_sensing_problem(
-                        m, self.signaldim, self.dictdim, l, self.numdata, "randn", "randn")
+                        m, self.signaldim, self.dictdim, l, self.numdata, operator="tightframe", acquisition="randn")
+                #TODO: DEBUG HACK:
+                # savename = 'signals_delta' + str(delta) + '_rho' + str(rho) + ".mat"
+                # mdict = scipy.io.loadmat(savename)#, {'operator':Omega, 'measurements':y,'acqumatrix':M, 'realdata':x0})
+                # measurements = mdict['measurements']
+                # acqumatrix = mdict['acqumatrix']
+                # realdata = mdict['realdata']
+                # operator = mdict['operator']
+                # realcosupport = mdict['realcosupport']
+
 
                 realsupport = np.zeros((operator.shape[0]-realcosupport.shape[0], realcosupport.shape[1]), dtype=int)
                 for i in range(realcosupport.shape[1]):
@@ -229,11 +257,12 @@ class AnalysisPhaseTransition(PhaseTransition):
                         errors = data - realdata
                         for i in range(errors.shape[1]):
                             errors[:, i] = errors[:, i] / np.linalg.norm(realdata[:, i])
-                        self.avgerr[solver][idelta, irho] = np.mean(np.sqrt(sum(errors**2, 0)))
+                            self.err[solver][idelta, irho][i] = np.sqrt(sum(errors[:,i]**2))
+                        #self.avgerr[solver][idelta, irho] = np.mean(np.sqrt(sum(errors**2, 0)))
 
 
 # TODO: add many more parameters
-def plot_phase_transition(matrix, transpose=True):
+def plot_phase_transition(matrix, transpose=True, reverse_colormap=False):
 
     # restrict to [0, 1]
     np.clip(matrix, 0, 1, out=matrix)
@@ -251,4 +280,8 @@ def plot_phase_transition(matrix, transpose=True):
 
     # plt.figure()
     # Transpose the data so first axis = horizontal, use inverse colormap so small(good) = white, origin = lower left
-    plt.imshow(bigmatrix, cmap=cm.gray_r, norm=mcolors.Normalize(0, 1), interpolation='nearest', origin='lower')
+    if reverse_colormap:
+        cmap = cm.gray_r
+    else:
+        cmap = cm.gray
+    plt.imshow(bigmatrix, cmap=cmap, norm=mcolors.Normalize(0, 1), interpolation='nearest', origin='lower')

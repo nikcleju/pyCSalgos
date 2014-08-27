@@ -174,7 +174,7 @@ def _orthogonal_matching_pursuit(data, dictionary, stopval, algorithm="sklearn")
                 coef[:,i], support = omp_sturm_omp_qr(data[:,i], dictionary, np.dot(dictionary.T, dictionary), data.shape[0], stopval)
             else:
                 coef[:,i], support = omp_sturm_omp_qr(data[:,i], dictionary, np.dot(dictionary.T, dictionary), stopval, 0)
-        return np.squeeze(coef)
+        return coef
 
     raise ValueError("Algorithm '%s' does not exist", algorithm)
 
