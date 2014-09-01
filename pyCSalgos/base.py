@@ -46,6 +46,13 @@ class SparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
         :return: The coefficient matrix. Each column is the decomposition of the corresponding data vector
          """
 
+    # __repr()__ mist return a string object, not an unicode object!
+    #def __repr__(self):
+    #    """
+    #    Unicode version of __repr__()
+    #    """
+    #    return unicode(super(SparseSolver,self).__repr__())
+
 class AnalysisSparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
     """
     Base class for all analysis-based solvers
@@ -69,7 +76,7 @@ class AnalysisSparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def solve(self, measurements, acqumatrix, operator):
+    def solve(self, measurements, acqumatrix, operator, realdict):
         """
         Performs the solving
 
@@ -77,6 +84,7 @@ class AnalysisSparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
          as columns
         :param acqumatrix: The acquisition matrix
         :param operator: The operator matrix
+        :param realdict:
 
         :return: The recovered signals. Each column is the signal recovered from the corresponding measurements vector
          """

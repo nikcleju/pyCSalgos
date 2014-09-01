@@ -31,7 +31,7 @@ class AnalysisL1Min(AnalysisSparseSolver):
         return "AnalysisL1Min ("+str(self.stopval)+", "+str(self.algorithm)+")"
 
 
-    def solve(self, measurements, acqumatrix, operator):
+    def solve(self, measurements, acqumatrix, operator, realdict=None):
         #return analysis_l1min(measurements, dictionary, self.stopval, self.algorithm)
 
         # Ensure measurements 2D

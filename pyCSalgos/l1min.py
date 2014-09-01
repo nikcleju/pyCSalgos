@@ -9,8 +9,9 @@ Provides l1 minimization from l1magic toolbox
 
 import math
 import scipy
-
 import numpy as np
+import cvxopt
+import cvxopt.solvers
 
 from base import SparseSolver
 
@@ -56,6 +57,13 @@ def _l1min(data, dictionary, stopval, algorithm):
                 coef[:,i] = l1qc_logbarrier(np.zeros(N), dictionary, dictionary.T, data[:,i], stopval, lbtol=0.1*stopval)
             else:
                 raise ValueError("stopping value is negative")
+    elif algorithm == "cvxopt":
+        if stopval == 0:
+            for i in range(Ndata):
+                coef[:,i] = cvxopt_lp(data[:,i], dictionary)
+        else:
+            raise ValueError("cvxopt: stopval must be 0")
+
     else:
         raise ValueError("Algorithm '%s' does not exist", algorithm)
     return np.squeeze(coef)
@@ -66,7 +74,7 @@ class l1NotImplementedError(Exception):
 
 # equality constraints:
 
-def l1eq_pd(x0, A, At, b, pdtol=1e-3, pdmaxiter=50, cgtol=1e-8, cgmaxiter=200, verbose=False):
+def l1eq_pd(x0, A, At, b, pdtol=1e-4, pdmaxiter=5000, cgtol=1e-8, cgmaxiter=200, verbose=False):
 
     """
     l1 minimization with l1magic toolbox
@@ -520,3 +528,39 @@ def l1qc_logbarrier(x0, A, At, b, epsilon, lbtol=1e-3, mu=10, cgtol=1e-8, cgmaxi
         tau = mu*tau
 
     return xp
+
+
+def cvxopt_lp(y, A):
+
+    N = A.shape[1]
+    AA = np.hstack((A, -A))
+    c = np.ones((2*N, 1))
+
+    G = np.vstack((np.zeros((2*N,2*N)), -np.eye(2*N)))
+    h = np.zeros((4*N,1))
+
+    # Convert numpy arrays to cvxopt matrices
+    cvx_c = cvxopt.matrix(c)
+    cvx_G = cvxopt.matrix(G)
+    cvx_h = cvxopt.matrix(h)
+    cvx_AA = cvxopt.matrix(AA)
+    cvx_y = cvxopt.matrix(y.reshape(y.size,1))
+
+    # Options
+    cvxopt.solvers.options['show_progress'] = False
+    #cvxopt.solvers.options['MOSEK'] = {mosek.iparam.log: 0}
+
+    # Solve
+    #res = cvxopt.solvers.lp(cvx_c, cvx_G, cvx_h, A=cvx_AA, b=cvx_y, solver='mosek')
+    res = cvxopt.solvers.lp(cvx_c, cvx_G, cvx_h, A=cvx_AA, b=cvx_y)
+
+    primal = np.squeeze(np.array(res['x']))
+    gamma = primal[:N] - primal[N:]
+    return gamma
+
+    #lb = zeros(2*N,1);
+    #ub = Inf*ones(2*N,1);
+    ##[primal,obj,exitflag,output2,dual] = linprog(c,[],[],A,y,lb,ub,[],opt);
+    ##[primal,~,~,~,~] = linprog(c,[],[],A,aggy,lb,ub);
+    #[primal,obj,exitflag,output2,dual] = linprog(c,[],[],A,aggy,lb,ub);
+    #gamma = primal(1:N) - primal((N+1):(2*N));

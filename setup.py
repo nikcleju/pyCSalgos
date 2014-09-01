@@ -36,5 +36,5 @@ Algorithms implemented:
 
 Not thoroughly tested, but I use them for my research. Use at own risk. 
 """,
-    requires=['six', 'numpy', 'scipy']
+    requires=['six', 'numpy', 'scipy', 'matplotlib']
 )

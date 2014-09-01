@@ -22,7 +22,7 @@ class AnalysisBySynthesis(AnalysisSparseSolver):
     def __str__(self):
         return "AbS (" + str(self.synthsolver) + ", " + str(self.nullspace_multiplier) + ")"
 
-    def solve(self, measurements, acqumatrix, operator):
+    def solve(self, measurements, acqumatrix, operator, realdict):
 
         # Ensure measurements 2D
         if len(measurements.shape) == 1:
@@ -50,7 +50,15 @@ class AnalysisBySynthesis(AnalysisSparseSolver):
         #     verif[:,i] = np.dot(dictionary , pyCSalgos.OMP.omp_QR.greed_omp_qr(np.squeeze(ytilde[:,i]),Atilde,Atilde.shape[1],opts)[0])
         # assert(np.linalg.norm(verif - np.dot(dictionary, self.synthsolver.solve(ytilde, Atilde))) < 1e-10)
 
-        return np.dot(dictionary, self.synthsolver.solve(ytilde, Atilde))
+        realcosupport = realdict['cosupport']
+        realsupport = np.zeros((operator.shape[0] - realcosupport.shape[0], realcosupport.shape[1]), dtype=int)
+        for i in range(realcosupport.shape[1]):
+            realsupport[:, i] = np.setdiff1d(range(operator.shape[0]), realcosupport[:, i])
+
+        datatilde = np.concatenate((realdict['data'], np.zeros((operatorsize-signalsize, realdict['data'].shape[1]))))
+        realdict_synth = {'data': datatilde, 'gamma': realdict['gamma'], 'support': realsupport}
+
+        return np.dot(dictionary, self.synthsolver.solve(ytilde, Atilde, realdict_synth))
 
     def computeMultiplier(self, measurements, acqumatrix, operator):
         """

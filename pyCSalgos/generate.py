@@ -215,6 +215,7 @@ def make_cosparse_coded_signal(signal_size, operator_size, cosparsity, num_data,
     # Prepare matrices
     data = numpy.zeros((signal_size, num_data))
     cosupport = numpy.zeros((cosparsity, num_data), dtype=int)
+    bNonZerosupport = numpy.zeros((operator_size, num_data), dtype=bool)
     gamma = numpy.zeros((operator_size, num_data))
 
     # Create operator
@@ -240,9 +241,12 @@ def make_cosparse_coded_signal(signal_size, operator_size, cosparsity, num_data,
         while (sum(sum(abs(T-operator))) > numpy.dot(tol,numpy.dot(operator_size,signal_size)) and j < max_j):
             j = j + 1
             T = operator
-            [U, S, Vh] = numpy.linalg.svd(operator)
+            [U, S, Vh] = numpy.linalg.svd(operator, full_matrices=False)
             V = Vh.T
-            operatortemp = numpy.dot(numpy.dot(U, numpy.concatenate((numpy.eye(signal_size), numpy.zeros((operator_size-signal_size,signal_size))))), V.transpose())
+            # U * In*0n * VT
+            #operatortemp = numpy.dot(numpy.dot(U, numpy.concatenate((numpy.eye(signal_size), numpy.zeros((operator_size-signal_size,signal_size))))), V.transpose())
+            operatortemp = numpy.dot(U, V.transpose())
+            #assert(numpy.linalg.norm(operatortemp - operatortemp2) < 1e-16)
             operator = numpy.dot(numpy.diag(1.0 / numpy.sqrt(numpy.diag(numpy.dot(operatortemp,operatortemp.transpose())))), operatortemp)
     elif isinstance(operator, numpy.ndarray):
         # operator is given
@@ -255,12 +259,22 @@ def make_cosparse_coded_signal(signal_size, operator_size, cosparsity, num_data,
     # Generate data from the nullspace of randomly picked l rows
     for i in range(num_data):
         cosupport[:,i] = numpy.sort(rng.permutation(operator_size)[:cosparsity])
-        [U,D,Vh] = numpy.linalg.svd(operator[cosupport[:,i],:])
-        V = Vh.T
-        nullspace = V[:,cosparsity:]
+
+        # ! SVD is very slow, use QR decomposition instead
+        #[U,D,Vh] = numpy.linalg.svd(operator[cosupport[:,i],:])
+        #V = Vh.T
+        #nullspace = V[:,cosparsity:]
+
+        Q, _ = scipy.linalg.qr(operator[cosupport[:,i],:].T)
+        nullspace = Q[:, cosparsity:]
+
         data[:,i] = numpy.squeeze(numpy.dot(nullspace, rng.randn(signal_size-cosparsity,1)))
+
         nonzerosupport = numpy.setdiff1d(range(operator_size), cosupport[:,i],True)
-        gamma[nonzerosupport,i] = numpy.dot(operator[nonzerosupport,:], data[:,i])
+        bNonZerosupport[nonzerosupport,i] = True
+
+    #gamma[nonzerosupport, i] = numpy.dot(operator[nonzerosupport,:], data[:,i])
+    gamma[bNonZerosupport] = numpy.dot(operator, data)[bNonZerosupport]
 
     return data, operator, gamma, cosupport
 

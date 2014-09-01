@@ -11,6 +11,7 @@ import math
 import scipy
 
 import numpy as np
+import scipy.linalg
 
 from base import AnalysisSparseSolver, ERCcheckMixin
 
@@ -31,7 +32,7 @@ class GreedyAnalysisPursuit(ERCcheckMixin, AnalysisSparseSolver):
         return "GreedyAnalysisPursuit("+str(self.stopval) + ")"
 
 
-    def solve(self, measurements, acqumatrix, operator):
+    def solve(self, measurements, acqumatrix, operator, realdict=None):
 
         # Force measurements 2D
         if len(measurements.shape) == 1:
@@ -82,7 +83,6 @@ class GreedyAnalysisPursuit(ERCcheckMixin, AnalysisSparseSolver):
         return results
 
 
-
 def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult, params):
 
     # This function aims to compute
@@ -128,7 +128,10 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
                 y_tilde = np.concatenate((y, np.zeros(Lambdahat.size)))
 
                 # Solve least-squares problem
-                xhat = np.linalg.lstsq(Omega_tilde, y_tilde)[0]
+                # FAST: Use QR and solve_triang() instead of lstsq()
+                #xhat = np.linalg.lstsq(Omega_tilde, y_tilde)[0]
+                xhat = fast_lsqst(Omega_tilde, y_tilde)
+                #assert(np.linalg.norm(xhat-xhat2)<1e-10)
 
                 # Check tolerance below required, and adjust Lagr multiplier accordingly
                 temp = np.linalg.norm(y - np.dot(M,xhat), 2)
@@ -371,3 +374,15 @@ def check_stopping_criteria(xhat, xinit, maxcoef, lagmult, Lambdahat, params):
         return 1
 
     return 0
+
+def fast_lsqst(A, y):
+    m,n = A.shape
+    if m >= n:
+        Q, R = scipy.linalg.qr(A, mode='economic') # qr decomposition of A
+        Qb = np.dot(Q.T,y) # computing Q^T*b (project b onto the range of A)
+        x_qr = scipy.linalg.solve_triangular(R, Qb)
+    else:
+        # http://en.wikipedia.org/wiki/QR_decomposition#Using_for_solution_to_linear_inverse_problems
+        Q, R = scipy.linalg.qr(A.T, mode='economic') # qr decomposition of A.T
+        x_qr = np.dot(Q, scipy.linalg.solve_triangular(R, y))
+    return x_qr
