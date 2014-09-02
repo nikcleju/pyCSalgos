@@ -17,7 +17,7 @@ except ImportError, e:
     has_sklearn_datasets = False
 
 
-def make_sparse_coded_signal(signal_size, dict_size, sparsity, num_data, dictionary="randn",
+def make_sparse_coded_signal(signal_size, dict_size, sparsity, num_data, snr_db, dictionary="randn",
                              use_sklearn=True, random_state=None):
     """
     Generate sparse coded signals.
@@ -32,6 +32,8 @@ def make_sparse_coded_signal(signal_size, dict_size, sparsity, num_data, diction
         Desired sparsity of the signal.
     num_data : int
         Number of signals to generate.
+    snr_db : float
+        Signal to Noise Ratio (dB). Can be numpy.inf for no noise.
     dictionary : {'randn', 'orthonormal', a numpy matrix}, optional (default="randn")
          The type of dictionary. Can be one of the following:
         - "randn" (default): i.i.d. random gaussian entries, atoms (columns) are normalized
@@ -97,10 +99,25 @@ def make_sparse_coded_signal(signal_size, dict_size, sparsity, num_data, diction
         # Generate data
         data = numpy.dot(dictionary,gamma)
 
-    return data,dictionary,gamma,support
+    # Add noise
+    if numpy.isfinite(snr_db):
+        noise = rng.randn(signal_size, num_data)
+        SNR_norm = 10**(snr_db/20.)
+        for i in range(num_data):
+            # Make norm 1
+            noise[:,i] = noise[:,i] / numpy.linalg.norm(noise[:,i])
+            # Make smaller than data by SNR_norm
+            noise[:,i] = noise[:,i] / SNR_norm * numpy.linalg.norm(data[:,i])
+            (numpy.linalg.norm(data[:,i])**2 / numpy.linalg.norm(noise[:,i]))
+    else:
+        noise = 0
+    cleardata = data.copy() # no noise data
+    data = data + noise
+
+    return data,dictionary,gamma,support,cleardata
 
 
-def make_compressed_sensing_problem(num_measurements, signal_size, dict_size, sparsity, num_data,
+def make_compressed_sensing_problem(num_measurements, signal_size, dict_size, sparsity, num_data, snr_db,
                                     dictionary="randn", acquisition="randn", use_sklearn=True, random_state=None):
     """
     Generate a random compressed sensing problem.
@@ -117,6 +134,8 @@ def make_compressed_sensing_problem(num_measurements, signal_size, dict_size, sp
         Desired sparsity of the signal.
     num_data : int
         Number of signals to generate.
+    snr_db : float
+        Signal to Noise Ratio (dB). Can be numpy.inf for no noise.
     dictionary : {'randn', 'orthonormal', a numpy matrix}, optional (default="randn")
          The type of dictionary. Can be one of the following:
         - "randn" (default): i.i.d. random gaussian entries, atoms (columns) are normalized
@@ -154,7 +173,7 @@ def make_compressed_sensing_problem(num_measurements, signal_size, dict_size, sp
     rng = check_random_state(random_state)
 
     # generate sparse coded data
-    data, dictionary, gamma, support = make_sparse_coded_signal(signal_size, dict_size, sparsity ,num_data,
+    data, dictionary, gamma, support, cleardata = make_sparse_coded_signal(signal_size, dict_size, sparsity ,num_data, snr_db,
                                                                 dictionary, use_sklearn, random_state=rng)
 
     # generate acquisition matrix
@@ -170,11 +189,11 @@ def make_compressed_sensing_problem(num_measurements, signal_size, dict_size, sp
 
     measurements = numpy.dot(acqumatrix, data)
 
-    return measurements, acqumatrix, data, dictionary, gamma, support
+    return measurements, acqumatrix, data, dictionary, gamma, support, cleardata
 
 
 
-def make_cosparse_coded_signal(signal_size, operator_size, cosparsity, num_data, operator="tightframe",
+def make_cosparse_coded_signal(signal_size, operator_size, cosparsity, num_data, snr_db, operator="tightframe",
                                random_state=None):
     """
     Generate co-sparse coded signals
@@ -189,6 +208,8 @@ def make_cosparse_coded_signal(signal_size, operator_size, cosparsity, num_data,
         Desired cosparsity of the signal.
     num_data : int
         Number of signals to generate.
+    snr_db : float
+        Signal to Noise Ratio (dB). Can be numpy.inf for no noise.
     operator : {'tightframe', 'randn', 'orthonormal', a numpy matrix}, optional (default="tightframe")
          The type of operator. Can be one of the following:
         - "tightframe" (default): a random tight frame (tall matrix), with normalized rows
@@ -276,10 +297,25 @@ def make_cosparse_coded_signal(signal_size, operator_size, cosparsity, num_data,
     #gamma[nonzerosupport, i] = numpy.dot(operator[nonzerosupport,:], data[:,i])
     gamma[bNonZerosupport] = numpy.dot(operator, data)[bNonZerosupport]
 
-    return data, operator, gamma, cosupport
+    # Add noise
+    if numpy.isfinite(snr_db):
+        noise = rng.randn(signal_size, num_data)
+        SNR_norm = 10**(snr_db/20.)
+        for i in range(num_data):
+            # Make norm 1
+            noise[:,i] = noise[:,i] / numpy.linalg.norm(noise[:,i])
+            # Make smaller than data by SNR_norm
+            noise[:,i] = noise[:,i] / SNR_norm * numpy.linalg.norm(data[:,i])
+            (numpy.linalg.norm(data[:,i])**2 / numpy.linalg.norm(noise[:,i]))
+    else:
+        noise = 0
+    cleardata = data.copy() # no noise data
+    data = data + noise
+
+    return data, operator, gamma, cosupport, cleardata
 
 
-def make_analysis_compressed_sensing_problem(num_measurements, signal_size, operator_size, cosparsity, num_data,
+def make_analysis_compressed_sensing_problem(num_measurements, signal_size, operator_size, cosparsity, num_data, snr_db,
                                              operator="tightframe", acquisition="randn", random_state=None):
     """
     Generate a random analysis compressed sensing problem
@@ -296,6 +332,8 @@ def make_analysis_compressed_sensing_problem(num_measurements, signal_size, oper
         Desired cosparsity of the signal.
     num_data : int
         Number of signals to generate.
+    snr_db : float
+        Signal to Noise Ratio (dB). Can be numpy.inf for no noise.
     operator : {'tightframe', 'randn', 'orthonormal', a numpy matrix}, optional (default="tightframe")
          The type of operator. Can be one of the following:
         - "tightframe" (default): a random tight frame (tall matrix), with normalized rows
@@ -329,7 +367,8 @@ def make_analysis_compressed_sensing_problem(num_measurements, signal_size, oper
     rng = check_random_state(random_state)
 
     # generate cosparse coded data
-    data, operator, gamma, cosupport = make_cosparse_coded_signal(signal_size, operator_size, cosparsity, num_data, operator, random_state=rng)
+    data, operator, gamma, cosupport, cleardata = make_cosparse_coded_signal(signal_size, operator_size, cosparsity,
+                                                                  num_data, snr_db, operator, random_state=rng)
 
     # generate acquisition matrix
     if acquisition=="randn":
@@ -346,7 +385,7 @@ def make_analysis_compressed_sensing_problem(num_measurements, signal_size, oper
 
     # TODO: add noise
 
-    return measurements, acqumatrix, data, operator, gamma, cosupport
+    return measurements, acqumatrix, data, operator, gamma, cosupport, cleardata
 
 
 

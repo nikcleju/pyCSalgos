@@ -24,13 +24,14 @@ def test_make_sparse_coded_signal():
     n, N = 20, 30
     k = 5
     Ndata = 10
+    snr_db = numpy.inf
     # Parameterized test:
     for use_sklearn in [True,False]:
-        yield subtest_make_sparse_coded_signal, n, N, k, Ndata, use_sklearn
+        yield subtest_make_sparse_coded_signal, n, N, k, Ndata, snr_db, use_sklearn
 
-def subtest_make_sparse_coded_signal(n,N,k,Ndata,use_sklearn):
+def subtest_make_sparse_coded_signal(n,N,k,Ndata,snr_db,use_sklearn):
 
-    X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, "randn", use_sklearn)
+    X, D, gamma, support, clearX = make_sparse_coded_signal(n, N, k, Ndata, snr_db, "randn", use_sklearn)
 
     # check shapes
     print X.shape
@@ -58,19 +59,20 @@ def test_make_sparse_coded_signal_dictionary():
     n, N = 20, 30
     k = 5
     Ndata = 10
+    snr_db = numpy.inf
 
-    assert_raises(ValueError, make_sparse_coded_signal, n, N, k, Ndata, "orthonormal", True)
+    assert_raises(ValueError, make_sparse_coded_signal, n, N, k, Ndata, snr_db, "orthonormal", True)
 
-    X, D, gamma, support = make_sparse_coded_signal(n, n, k, Ndata, dictionary="orthonormal", use_sklearn=True)
+    X, D, gamma, support, clearX = make_sparse_coded_signal(n, n, k, Ndata, snr_db, dictionary="orthonormal", use_sklearn=True)
     assert_allclose(numpy.dot(D, D.T), numpy.eye(n), atol=1e-10)
     assert_allclose(numpy.dot(D.T, D), numpy.eye(n), atol=1e-10)
 
     Dict = numpy.random.randn(n,N)
-    assert_raises(ValueError, make_sparse_coded_signal, n, N+1, k, Ndata, Dict, True)
-    X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, dictionary=Dict, use_sklearn=True)
+    assert_raises(ValueError, make_sparse_coded_signal, n, N+1, k, Ndata, snr_db, Dict, True)
+    X, D, gamma, support, clearX = make_sparse_coded_signal(n, N, k, Ndata, snr_db, dictionary=Dict, use_sklearn=True)
     assert_array_equal(D, Dict)
 
-    assert_raises(ValueError, make_sparse_coded_signal, n, N, k, Ndata, "somethingwrong", True)
+    assert_raises(ValueError, make_sparse_coded_signal, n, N, k, Ndata, snr_db, "somethingwrong", True)
 
 
 def test_make_compressed_sensing_problem():
@@ -78,13 +80,14 @@ def test_make_compressed_sensing_problem():
     n, N = 20, 30
     k = 5
     Ndata = 10
+    snr_db = numpy.inf
 
-    assert_raises(ValueError, make_compressed_sensing_problem, m, n, N, k, Ndata, "randn", "somethingwrong", True)
+    assert_raises(ValueError, make_compressed_sensing_problem, m, n, N, k, Ndata, snr_db, "randn", "somethingwrong", True)
     P = numpy.random.randn(m,n)
-    assert_raises(ValueError, make_compressed_sensing_problem, m+1, n, N, k, Ndata, "randn", P, True)
+    assert_raises(ValueError, make_compressed_sensing_problem, m+1, n, N, k, Ndata,snr_db, "randn", P, True)
 
-    measurements, acqumatrix, data, dictionary, gamma, support = \
-        make_compressed_sensing_problem(m, n, N, k, Ndata, "randn", "randn", True)
+    measurements, acqumatrix, data, dictionary, gamma, support, cleardata = \
+        make_compressed_sensing_problem(m, n, N, k, Ndata, snr_db, "randn", "randn", True)
 
     assert_equal(measurements.shape, (m,Ndata))
     assert_equal(acqumatrix.shape, (m,n))
@@ -96,29 +99,30 @@ def test_make_cosparse_coded_signal():
     N, n = 30, 20
     l = 15
     numdata = 10
+    snr_db = numpy.inf
 
     # Check operator
     #   raises
-    assert_raises(ValueError, make_cosparse_coded_signal, n, N, l, numdata, "orthonormal")
-    assert_raises(ValueError, make_cosparse_coded_signal, n, N+1, l, numdata, numpy.random.randn(N,n))
-    assert_raises(ValueError, make_cosparse_coded_signal, n, N, l, numdata, "somethingwrong")
+    assert_raises(ValueError, make_cosparse_coded_signal, n, N, l, numdata, snr_db, "orthonormal")
+    assert_raises(ValueError, make_cosparse_coded_signal, n, N+1, l, numdata, snr_db, numpy.random.randn(N,n))
+    assert_raises(ValueError, make_cosparse_coded_signal, n, N, l, numdata, snr_db, "somethingwrong")
     #  normalization
-    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, n, l, numdata, operator="randn")
+    data, operator, gamma, cosupport, cleardata = make_cosparse_coded_signal(n, n, l, numdata, snr_db, operator="randn")
     assert_allclose(numpy.sqrt(numpy.sum(operator**2, axis=1)), numpy.ones(n), atol=1e-10)
     #  orthonormality
-    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, n, l, numdata, operator="orthonormal")
+    data, operator, gamma, cosupport, cleardata = make_cosparse_coded_signal(n, n, l, numdata, snr_db, operator="orthonormal")
     assert_allclose(numpy.dot(operator, operator.T), numpy.eye(n), atol=1e-10)
     assert_allclose(numpy.dot(operator.T, operator), numpy.eye(n), atol=1e-10)
     #  tightframe
-    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, n, l, numdata, operator="tightframe")
+    data, operator, gamma, cosupport, cleardata = make_cosparse_coded_signal(n, n, l, numdata, snr_db, operator="tightframe")
     assert_allclose(numpy.dot(operator.T, operator), numpy.eye(n), atol=1e-10)
     #  given operator
     op = numpy.random.randn(N,n)
-    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, N, l, numdata, operator=op)
+    data, operator, gamma, cosupport, cleardata = make_cosparse_coded_signal(n, N, l, numdata, snr_db, operator=op)
     assert_array_equal(operator, op)
 
     # Check data
-    data, operator, gamma, cosupport = make_cosparse_coded_signal(n, N, l, numdata, "randn")
+    data, operator, gamma, cosupport, cleardata = make_cosparse_coded_signal(n, N, l, numdata, snr_db, "randn")
     #  check shapes
     assert_equal(data.shape, (n, numdata), "data shape mismatch")
     assert_equal(operator.shape, (N, n), "operator shape mismatch")
@@ -138,13 +142,14 @@ def test_make_analysis_compressed_sensing_problem():
     N, n = 30, 20
     l = 15
     numdata = 10
+    snr_db = numpy.inf
 
-    assert_raises(ValueError, make_analysis_compressed_sensing_problem, m, n, N, l, numdata, "randn", "somethingwrong")
+    assert_raises(ValueError, make_analysis_compressed_sensing_problem, m, n, N, l, numdata, snr_db, "randn", "somethingwrong")
     P = numpy.random.randn(m,n)
-    assert_raises(ValueError, make_analysis_compressed_sensing_problem, m+1, n, N, l, numdata, "randn", P)
+    assert_raises(ValueError, make_analysis_compressed_sensing_problem, m+1, n, N, l, numdata, snr_db, "randn", P)
 
-    measurements, acqumatrix, data, operator, gamma, cosupport = \
-        make_analysis_compressed_sensing_problem(m, n, N, l, numdata, "randn", "randn")
+    measurements, acqumatrix, data, operator, gamma, cosupport, cleardata = \
+        make_analysis_compressed_sensing_problem(m, n, N, l, numdata, snr_db, "randn", "randn")
 
     assert_equal(measurements.shape, (m,numdata))
     assert_equal(acqumatrix.shape, (m,n))

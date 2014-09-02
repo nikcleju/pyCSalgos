@@ -22,7 +22,7 @@ n, N, k, Ndata = 20,30,3,10
 
 SolverClass =IterativeHardThresholding
 
-X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, random_state=47)
+X, D, gamma, support, realX = make_sparse_coded_signal(n, N, k, Ndata, np.inf, random_state=47)
 realdict = {'data':X, 'gamma':gamma, 'support':support}
 
 maxiter = 70000

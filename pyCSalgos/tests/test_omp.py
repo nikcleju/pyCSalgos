@@ -30,7 +30,7 @@ rng = np.random.RandomState(47)
 
 SolverClass = OrthogonalMatchingPursuit
 
-X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, random_state=47)
+X, D, gamma, support, clearX = make_sparse_coded_signal(n, N, k, Ndata, np.inf, random_state=47)
 tol = 1e-6
 
 algorithms = ["sklearn", "sklearn_local", "sparsify_QR", "sturm_QR"]
@@ -45,7 +45,7 @@ def subtest_correct_shapes(stopval, algorithm):
     omp = SolverClass(stopval = stopval, algorithm=algorithm)
     # single vector
     coef = omp.solve(X[:,0], D)
-    assert_equal(coef.shape, (N,))
+    assert_equal(coef.shape, (N,)) # KNOWN FAIL: sturm_QR returns (N,1), other return (N,)
     # multiple vectors
     coef = omp.solve(X, D)
     assert_equal(coef.shape, (N, Ndata))
@@ -86,7 +86,7 @@ def subtest_perfect_support_recovery(stopval, algorithm):
     # check support only when stopping criterion = fixed sparsity
     # otherwise might get very small but non-zero coefficients
     omp = SolverClass(stopval = stopval, algorithm=algorithm)
-    notused, Dortho, gammaortho, supportortho = make_sparse_coded_signal(n, n, k, Ndata, random_state=48)
+    notused, Dortho, gammaortho, supportortho, notused = make_sparse_coded_signal(n, n, k, Ndata, np.inf, random_state=48)
     Dortho = scipy.linalg.orth(Dortho)
     Xortho = np.dot(Dortho, gammaortho)
     coef = omp.solve(Xortho, Dortho)

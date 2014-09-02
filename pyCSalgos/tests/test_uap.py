@@ -24,7 +24,8 @@ lambda2 = 1.0
 
 SolverClass = UnconstrainedAnalysisPursuit
 
-measurements, acqumatrix, data, operator, gamma, cosupport = make_analysis_compressed_sensing_problem(m,n,N,l, numdata, random_state=47)
+measurements, acqumatrix, data, operator, gamma, cosupport, realdata = \
+    make_analysis_compressed_sensing_problem(m,n,N,l, numdata, np.inf, random_state=47)
 tol = 1e-6
 
 

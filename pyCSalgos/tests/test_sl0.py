@@ -22,7 +22,7 @@ n, N, k, Ndata = 20,30,3,10
 
 SolverClass = SmoothedL0
 
-X, D, gamma, support = make_sparse_coded_signal(n, N, k, Ndata, random_state=47)
+X, D, gamma, support, clearX = make_sparse_coded_signal(n, N, k, Ndata, np.inf, random_state=47)
 
 algorithms = ["exact"]
 
