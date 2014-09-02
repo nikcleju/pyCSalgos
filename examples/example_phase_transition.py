@@ -35,7 +35,7 @@ def run_test():
 
     pt.plot(solve=True, check=False, thresh=1e-3)
 
-    pt.save()
+    pt.savedata()
 
     print "Example finished."
 

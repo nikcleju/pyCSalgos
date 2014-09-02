@@ -17,27 +17,30 @@ import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import datetime
 import hdf5storage
+import cPickle
 
 import generate as gen
 
 
 class PhaseTransition(with_metaclass(ABCMeta, object)):
-    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, solvers):
+    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, solvers=[]):
+
         self.signaldim = signaldim
         self.dictdim = dictdim
         self.numdata = numdata
         self.deltas = deltas
         self.rhos = rhos
-        self.solvers = solvers
 
         self.err = None
         self.ERCsuccess = None
+        self.simData = []
 
+        self.solvers = solvers
         self.ERCsolvers = [solver for solver in self.solvers if hasattr(solver, 'checkERC')]
         self.solverNames = [str(solver) for solver in self.solvers]
         self.ERCsolverNames = [str(solver) for solver in self.ERCsolvers]
 
-        self.simData = []
+        self.clear()
 
     @abstractmethod
     def run(self, solve=True, check=False):
@@ -46,7 +49,16 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         """
 
     def clear(self):
+        self.err = None
+        self.ERCsuccess = None
         self.simData = []
+
+    def set_solvers(self, solvers):
+        self.clear()
+        self.solvers = solvers
+        self.ERCsolvers = [solver for solver in self.solvers if hasattr(solver, 'checkERC')]
+        self.solverNames = [str(solver) for solver in self.solvers]
+        self.ERCsolverNames = [str(solver) for solver in self.ERCsolvers]
 
     def get_description(self):
         """
@@ -214,7 +226,7 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         avgerr = self._compute_average(self.err, thresh=None)
         return np.mean(avgerr, (1,2,3)).reshape(shape, order='C') # mean over all axes except 0, then reshape
 
-    def save(self, basename=None):
+    def savedata(self, basename=None):
         """
         Saves data and parameters to mat file
         :return:
@@ -230,28 +242,56 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
                  u'description': self.get_description()}
 
         hdf5storage.savemat(basename + '.mat', mdict)
+        with open(basename+".pickle", "w") as f:
+            cPickle.dump(self.solvers, f)
+            cPickle.dump(self.ERCsolvers, f)
         with open(basename+".txt", "w") as f:
             f.write(self.get_description())
 
-    def load(self, filename):
+    def loaddata(self, matfilename=None, picklefilename=None):
         """
-        Loads data from saved file.
-        A subsequent run() will overwrite the data. Currently no option to rerun same data (but planned).
-        :param filename:
+        Loads data from saved files. If matfilename is not None, all numerical data is read from ithe file (but not
+         the solver objects). If picklefilename is not None, solver objects are read from the file.
+        :param matfilename:
+        :param picklefilename:
         :return:
         """
 
-        mdict = hdf5storage.loadmat(filename)
-        self.signaldim = mdict[u'signaldim']
-        self.dictdim = mdict[u'dictdim']
-        self.numdata = mdict[u'numdata']
-        self.deltas = mdict[u'deltas']
-        self.rhos = mdict[u'rhos']
-        self.err = mdict[u'err']
-        self.ERCsuccess = mdict[u'ERCsuccess']
-        self.simData = mdict[u'simData']
+        if matfilename is not None:
+            mdict = hdf5storage.loadmat(matfilename)
+            self.signaldim = mdict[u'signaldim']
+            self.dictdim = mdict[u'dictdim']
+            self.numdata = mdict[u'numdata']
+            self.deltas = mdict[u'deltas']
+            self.rhos = mdict[u'rhos']
+            self.err = mdict[u'err']
+            self.ERCsuccess = mdict[u'ERCsuccess']
+            self.simData = mdict[u'simData']
 
+        if picklefilename is not None:
+            with open(picklefilename, "r") as f:
+                solvers = cPickle.load(f)
+                self.set_solvers(solvers)
 
+    @classmethod
+    def dump(self, filename):
+        """
+        Dumps all PhaseTransition object in a file using pickle
+        :return: Nothing
+        """
+        with open(filename, "w") as f:
+            cPickle.dump(self,f)
+
+    @classmethod
+    def load(cls, filename):
+        """
+        Classmethod.
+        Load complete PhaseTransition object dumped with pickle.dump()
+        :return: The loaded object
+        """
+        with open(filename, "r") as f:
+            obj = cPickle.load(f)
+        return obj
 
     def plot_average_error(self, shape, thresh=None):
         """
@@ -270,13 +310,14 @@ class SynthesisPhaseTransition(PhaseTransition):
     Class for running and plotting synthesis-based phase transitions
     """
 
-    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, solvers):
+    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, solvers=[]):
         super(SynthesisPhaseTransition, self).__init__(signaldim, dictdim, deltas, rhos, numdata, solvers)
 
     def run(self, solve=True, check=False):
 
-        if solve is False and check is False:
-            RuntimeError('Nothing to run (both solve and check are False)')
+        # Both can be False: only generates compressed sensing problems data
+        #if solve is False and check is False:
+        #    RuntimeError('Nothing to run (both solve and check are False)')
 
         # Initialize zero-filled arrays
         if solve is True:
@@ -337,13 +378,14 @@ class AnalysisPhaseTransition(PhaseTransition):
     Class for running and plotting analysis-based phase transitions
     """
 
-    def __init__(self, signaldim, operatordim, deltas, rhos, numdata, solvers):
+    def __init__(self, signaldim, operatordim, deltas, rhos, numdata, solvers=[]):
         super(AnalysisPhaseTransition, self).__init__(signaldim, operatordim, deltas, rhos, numdata, solvers)
 
     def run(self, solve=True, check=False):
 
-        if solve is False and check is False:
-            RuntimeError('Nothing to run (both solve and check are False)')
+        # Both can be False: only generates compressed sensing problems data
+        #if solve is False and check is False:
+        #    RuntimeError('Nothing to run (both solve and check are False)')
 
         # Initialize zero-filled arrays
         if solve is True:
