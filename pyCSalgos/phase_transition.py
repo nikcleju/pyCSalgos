@@ -23,15 +23,17 @@ import generate as gen
 
 
 class PhaseTransition(with_metaclass(ABCMeta, object)):
-    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, solvers=[]):
+    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers=[]):
 
         self.signaldim = signaldim
         self.dictdim = dictdim
         self.numdata = numdata
         self.deltas = deltas
         self.rhos = rhos
+        self.snr_db = snr_db
 
         self.err = None
+        self.ERCsuccess = None
         self.ERCsuccess = None
         self.simData = []
 
@@ -94,12 +96,13 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         + "Number of signals for each data point = " + str(self.numdata) + "\n"
         + "Delta = " + str(self.deltas) + "\n"
         + "Rho   = " + str(self.rhos) + "\n"
+        + "SNR = " + str(self.snr_db) + " dB\n"
         + "Solvers = " + str(self.solvers) + "\n"
         + "Solvers with Exact Recovery Condition (ERC) = " + str(self.ERCsolvers) + "\n"
         + "Error matrix = " + errstr + "\n"
         + "ERC success matrix = """ + ERCstr + "\n")
 
-    def plot(self, subplot=True, solve=True, check=False, thresh=None, show=True, basename=None, saveexts=None):
+    def plot(self, subplot=True, solve=True, check=False, thresh=None, show=True, basename=None, saveexts=[]):
         # plt.ion() # Turn interactive off
 
         if solve is False and check is False:
@@ -186,6 +189,7 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
                     for ext in saveexts:
                         plt.savefig(basename + '_' + str(idatasource) + '_' + str(icurrentdata) + '.' + ext, bbox_inches='tight')
             if subplot:
+                #plt.tight_layout()
                 # single figure, save at finish
                 for ext in saveexts:
                     plt.savefig(basename + '_' + str(idatasource) + '.' + ext, bbox_inches='tight')
@@ -206,26 +210,6 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         else:
             return np.mean(np.abs(data) < thresh, 3)
 
-        # avgerr = []
-        # for isolvererr, solvererr in enumerate(data):
-        #     current_avgerr = np.zeros(shape=(len(solvererr), len(solvererr[0])))
-        #     for idelta in range(current_avgerr.shape[0]):
-        #         for irho in range(current_avgerr.shape[1]):
-        #             if thresh is None:
-        #                 current_avgerr[idelta, irho] = np.mean(solvererr[idelta][irho])
-        #             else:
-        #                 current_avgerr[idelta, irho] = float(np.count_nonzero(solvererr[idelta][irho] < thresh)) \
-        #                                                / len(solvererr[idelta][irho])
-        #     avgerr.append(current_avgerr)
-        # return avgerr
-
-    def compute_global_average_error(self, shape, thresh=None):
-        """
-        Returns an array same shape as 'solvers' array, containing the average value of the phase transition
-        """
-        avgerr = self._compute_average(self.err, thresh=None)
-        return np.mean(avgerr, (1,2,3)).reshape(shape, order='C') # mean over all axes except 0, then reshape
-
     def savedata(self, basename=None):
         """
         Saves data and parameters to mat file
@@ -236,7 +220,7 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
 
         # dictionary to save
         mdict = {u'signaldim': self.signaldim, u'dictdim': self.dictdim, u'numdata': self.numdata,
-                 u'deltas': self.deltas, u'rhos': self.rhos,
+                 u'deltas': self.deltas, u'rhos': self.rhos, u'snr_db': self.snr_db,
                  u'solverNames': self.solverNames, u'ERCsolverNames': self.ERCsolverNames,
                  u'err': self.err, u'ERCsuccess': self.ERCsuccess, u'simData': self.simData,
                  u'description': self.get_description()}
@@ -257,21 +241,22 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         :return:
         """
 
+        if picklefilename is not None:
+            with open(picklefilename, "r") as f:
+                solvers = cPickle.load(f)
+                self.set_solvers(solvers)
+
         if matfilename is not None:
             mdict = hdf5storage.loadmat(matfilename)
             self.signaldim = mdict[u'signaldim']
             self.dictdim = mdict[u'dictdim']
             self.numdata = mdict[u'numdata']
-            self.deltas = mdict[u'deltas']
-            self.rhos = mdict[u'rhos']
-            self.err = mdict[u'err']
-            self.ERCsuccess = mdict[u'ERCsuccess']
+            self.deltas = mdict[u'deltas'].copy()
+            self.rhos = mdict[u'rhos'].copy()
+            self.err = mdict[u'err'].copy()
+            if mdict[u'ERCsuccess'] is not None:
+                self.ERCsuccess = mdict[u'ERCsuccess'].copy()
             self.simData = mdict[u'simData']
-
-        if picklefilename is not None:
-            with open(picklefilename, "r") as f:
-                solvers = cPickle.load(f)
-                self.set_solvers(solvers)
 
     @classmethod
     def dump(self, filename):
@@ -293,6 +278,14 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
             obj = cPickle.load(f)
         return obj
 
+
+    def compute_global_average_error(self, shape, thresh=None):
+        """
+        Returns an array same shape as 'solvers' array, containing the average value of the phase transition
+        """
+        avgerr = self._compute_average(self.err, thresh)
+        return np.mean(avgerr, (1,2)).reshape(shape, order='C') # mean over all axes except 0, reshape in row order
+
     def plot_average_error(self, shape, thresh=None):
         """
         Plots an array same shape as 'solvers' array, containing the average value of the phase transition
@@ -301,7 +294,10 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         values = self.compute_global_average_error(shape, thresh)
         values = values - np.min(values)  # translate minimum to 0
         values = values / np.max(values)  # translate maximum to 1
-        plot_phase_transition(values, transpose=False)
+        if thresh is None:
+            plot_phase_transition(values, reverse_colormap = True, transpose=False)
+        else:
+            plot_phase_transition(values, reverse_colormap = False, transpose=False)
         plt.show()
 
 
@@ -310,8 +306,8 @@ class SynthesisPhaseTransition(PhaseTransition):
     Class for running and plotting synthesis-based phase transitions
     """
 
-    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, solvers=[]):
-        super(SynthesisPhaseTransition, self).__init__(signaldim, dictdim, deltas, rhos, numdata, solvers)
+    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers=[]):
+        super(SynthesisPhaseTransition, self).__init__(signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers)
 
     def run(self, solve=True, check=False):
 
@@ -339,15 +335,16 @@ class SynthesisPhaseTransition(PhaseTransition):
                 k = int(round(m * rho, 0))  # rho = k/m
 
                 if not self.simData[idelta][irho]:
-                    measurements, acqumatrix, realdata, dictionary, realgamma, realsupport = \
+                    measurements, acqumatrix, realdata, dictionary, realgamma, realsupport, cleardata = \
                         gen.make_compressed_sensing_problem(
-                            m, self.signaldim, self.dictdim, k, self.numdata, "randn", "randn")
+                            m, self.signaldim, self.dictdim, k, self.numdata, self.snr_db, "randn", "randn")
                     self.simData[idelta][irho][u'measurements'] = measurements
                     self.simData[idelta][irho][u'acqumatrix'] = acqumatrix
                     self.simData[idelta][irho][u'realdata'] = realdata
                     self.simData[idelta][irho][u'dictionary'] = dictionary
                     self.simData[idelta][irho][u'realgamma'] = realgamma
                     self.simData[idelta][irho][u'realsupport'] = realsupport
+                    self.simData[idelta][irho][u'cleardata'] = cleardata
                 else:
                     measurements = self.simData[idelta][irho][u'measurements']
                     acqumatrix = self.simData[idelta][irho][u'acqumatrix']
@@ -355,6 +352,7 @@ class SynthesisPhaseTransition(PhaseTransition):
                     dictionary = self.simData[idelta][irho][u'dictionary']
                     realgamma = self.simData[idelta][irho][u'realgamma']
                     realsupport = self.simData[idelta][irho][u'realsupport']
+                    cleardata = self.simData[idelta][irho][u'cleardata']
 
                 realdict = {'data': realdata, 'gamma': realgamma, 'support': realsupport}
 
@@ -378,8 +376,8 @@ class AnalysisPhaseTransition(PhaseTransition):
     Class for running and plotting analysis-based phase transitions
     """
 
-    def __init__(self, signaldim, operatordim, deltas, rhos, numdata, solvers=[]):
-        super(AnalysisPhaseTransition, self).__init__(signaldim, operatordim, deltas, rhos, numdata, solvers)
+    def __init__(self, signaldim, operatordim, deltas, rhos, numdata, snr_db, solvers=[]):
+        super(AnalysisPhaseTransition, self).__init__(signaldim, operatordim, deltas, rhos, numdata, snr_db, solvers)
 
     def run(self, solve=True, check=False):
 
@@ -403,21 +401,24 @@ class AnalysisPhaseTransition(PhaseTransition):
 
         for idelta, delta in enumerate(self.deltas):
             for irho, rho in enumerate(self.rhos):
+                # DEBUG:
+                print "delta = " + str(delta) + ", rho = " + str(rho)
+
                 m = int(round(self.signaldim * delta, 0))  # delta = m/n
                 l = self.signaldim - int(round(m * rho, 0))  # rho = (n-l)/m
                 # l = int(round(self.signaldim - m * rho, 0))  #TODO: DEBUG, TO CHECK IF THE SAME!!
 
                 if not self.simData[idelta][irho]:
-                    measurements, acqumatrix, realdata, operator, realgamma, realcosupport = \
+                    measurements, acqumatrix, realdata, operator, realgamma, realcosupport, cleardata = \
                         gen.make_analysis_compressed_sensing_problem(
-                            m, self.signaldim, self.dictdim, l, self.numdata, operator="randn", acquisition="randn")
+                            m, self.signaldim, self.dictdim, l, self.numdata, self.snr_db, operator="randn", acquisition="randn")
                     self.simData[idelta][irho][u'measurements'] = measurements
                     self.simData[idelta][irho][u'acqumatrix'] = acqumatrix
                     self.simData[idelta][irho][u'realdata'] = realdata
                     self.simData[idelta][irho][u'operator'] = operator
                     self.simData[idelta][irho][u'realgamma'] = realgamma
                     self.simData[idelta][irho][u'realcosupport'] = realcosupport
-                    #self.simData[idelta][irho][u'realsupport'] = realsupport
+                    self.simData[idelta][irho][u'cleardata'] = cleardata
                 else:
                     measurements = self.simData[idelta][irho][u'measurements']
                     acqumatrix = self.simData[idelta][irho][u'acqumatrix']
@@ -425,6 +426,7 @@ class AnalysisPhaseTransition(PhaseTransition):
                     operator = self.simData[idelta][irho][u'operator']
                     realgamma = self.simData[idelta][irho][u'realgamma']
                     realcosupport = self.simData[idelta][irho][u'realcosupport']
+                    cleardata = self.simData[idelta][irho][u'cleardata']
 
                 # TODO: DEBUG HACK:
                 # savename = 'signals_delta' + str(delta) + '_rho' + str(rho) + ".mat"
@@ -470,8 +472,6 @@ def plot_phase_transition(matrix, transpose=True, reverse_colormap=False):
     if transpose:
         bigmatrix = bigmatrix.T
 
-    # plt.figure()
-    # Transpose the data so first axis = horizontal, use inverse colormap so small(good) = white, origin = lower left
     if reverse_colormap:
         cmap = cm.gray_r
     else:

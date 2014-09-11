@@ -14,6 +14,8 @@ import math
 import numpy as np
 import scipy
 
+from omp import OrthogonalMatchingPursuit
+
 class UAP_OMPA_dictfirst(SparseSolver):
     """
     UAP with \lambda_1 = \infty and \lambda_2 \approx 0., i.e. OMP first on dictionary and then on nullspace
@@ -25,8 +27,38 @@ class UAP_OMPA_dictfirst(SparseSolver):
     def __str__(self):
         return "UAP_OMPA_dictfirst("+str(self.solver)+")"
 
-    def solve(self, data, dictionary, realdict=None):
-        return _orthogonal_matching_pursuit(data, dictionary, self.stopval, self.algorithm)
+    def solve(self, measurements, acqumatrix, operator, realdict=None):
+        #return _orthogonal_matching_pursuit(data, dictionary, self.stopval, self.algorithm)
+
+        gammasize, signalsize = operator.shape
+        OmegaPinv = np.linalg.pinv(operator)
+        U,S,Vt = np.linalg.svd(OmegaPinv)
+        P = Vt[-(gammasize-signalsize):,:]
+
+        # First run synthesis solver on dictionary
+        coef = self.solver.solve(measurements, np.dot(acqumatrix, OmegaPinv), realdict=None)
+
+        # Second run on nullspace, with orthogonality error
+        ortho_error = - np.dot(P, coef)
+
+        # 1. selectia se face cu orthoerror'*P
+        # 2. apoi proiectia mai complicat, calculand diferenta delta_gamma fata de pasul ulterior
+        #   - se calc nullspace B al 20x21 de sus, delta_gamma e in spatiul nul al acesteia, deci d_g = BT*alfa
+        #   - jos, P_T * BT * alfa trebuie sa reduca cat mai mult norma lui orthoerror, deci e proiectia sa:
+        #   - alfa sunt coeficientii proiectiei lui ortho_error pe P_T * BT
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class StopCriterion:

@@ -38,7 +38,7 @@ class UnconstrainedAnalysisPursuit(AnalysisSparseSolver):
         return "UAP(" + str(self.stopval) + ', ' + str(self.lambda1) + ', ' + str(self.lambda2) + ")"
 
 
-    def solve(self, measurements, acqumatrix, operator):
+    def solve(self, measurements, acqumatrix, operator, realdict=None):
 
         # Force measurements 2D
         if len(measurements.shape) == 1:
