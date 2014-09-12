@@ -253,7 +253,8 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
             self.numdata = mdict[u'numdata']
             self.deltas = mdict[u'deltas'].copy()
             self.rhos = mdict[u'rhos'].copy()
-            self.err = mdict[u'err'].copy()
+            if mdict[u'err'] is not None:
+                self.err = mdict[u'err'].copy()
             if mdict[u'ERCsuccess'] is not None:
                 self.ERCsuccess = mdict[u'ERCsuccess'].copy()
             self.simData = mdict[u'simData']
