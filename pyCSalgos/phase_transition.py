@@ -403,7 +403,7 @@ class AnalysisPhaseTransition(PhaseTransition):
         for idelta, delta in enumerate(self.deltas):
             for irho, rho in enumerate(self.rhos):
                 # DEBUG:
-                print "delta = " + str(delta) + ", rho = " + str(rho)
+                #print "delta = " + str(delta) + ", rho = " + str(rho)
 
                 m = int(round(self.signaldim * delta, 0))  # delta = m/n
                 l = self.signaldim - int(round(m * rho, 0))  # rho = (n-l)/m
