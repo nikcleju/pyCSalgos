@@ -88,7 +88,7 @@ class IterativeHardThresholding(SparseSolver):
                 #else:
                 # leave coef[:,i] unchanged
 
-        return np.squeeze(coef)
+        return coef
 
 
 def _iht(dictionary, measurements, sparsity=None, tol=1e-10, maxiter=500, algorithm="accelerated"):

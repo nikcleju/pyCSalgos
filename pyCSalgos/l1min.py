@@ -66,7 +66,7 @@ def _l1min(data, dictionary, stopval, algorithm):
 
     else:
         raise ValueError("Algorithm '%s' does not exist", algorithm)
-    return np.squeeze(coef)
+    return coef
 
 
 class l1NotImplementedError(Exception):

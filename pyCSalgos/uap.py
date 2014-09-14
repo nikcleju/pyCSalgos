@@ -53,7 +53,7 @@ class UnconstrainedAnalysisPursuit(AnalysisSparseSolver):
         for i in range(numdata):
             outdata[:, i] = unconstrained_analysis_pursuit(measurements[:,i], acqumatrix, operator, self.lambda1, self.lambda2)
 
-        return np.squeeze(outdata)
+        return outdata
 
 def unconstrained_analysis_pursuit(measurements, acqumatrix, operator, lambda1, lambda2):
 

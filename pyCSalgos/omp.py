@@ -160,7 +160,7 @@ def _orthogonal_matching_pursuit(data, dictionary, stopval, algorithm="sklearn")
         coef = np.zeros((dictionary.shape[1], data.shape[1]))
         for i in range(data.shape[1]):
             coef[:,i] = omp_sparsify_greed_omp_qr(data[:,i], dictionary, dictionary.shape[1], ompopts)
-        return np.squeeze(coef)
+        return coef
 
     if algorithm == "sturm_QR":
         # call QR-based OMP by Bob Sturm

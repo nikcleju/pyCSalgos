@@ -65,7 +65,7 @@ class ApproximateMessagePassing(SparseSolver):
                 #else:
                 # leave coef[:,i] unchanged
 
-        return np.squeeze(coef)
+        return coef
 
 def _amp(dictionary, measurements, tol=0.00001, maxiter=500):
 

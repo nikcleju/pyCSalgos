@@ -50,7 +50,7 @@ def sl0(data, dictionary, sigmamin=1e-6, algorithm="exact"):
                 coef[:, i] = sl0_exact(dictionary, data[:,i], sigmamin)
     else:
         raise ValueError("Algorithm '%s' does not exist", algorithm)
-    return np.squeeze(coef)
+    return coef
 
 
 def sl0_exact(A, x, sigma_min, sigma_decrease_factor=0.5, mu_0=2, L=3, A_pinv=None, true_s=None):

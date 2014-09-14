@@ -52,7 +52,7 @@ class GreedyAnalysisPursuit(ERCcheckMixin, AnalysisSparseSolver):
         for i in range(numdata):
             outdata[:, i] = greedy_analysis_pursuit(measurements[:,i], acqumatrix, acqumatrix.T, operator, operator.T,
                                                     gapparams, np.zeros(operator.shape[1]))[0]
-        return np.squeeze(outdata)
+        return outdata
 
     def checkERC(self, acqumatrix, dictoper, support):
 

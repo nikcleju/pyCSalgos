@@ -53,7 +53,7 @@ def two_stage_thresholding(data, dictionary, stoptol, maxiter, algorithm="recomm
     else:
         raise ValueError("Algorithm '%s' does not exist", algorithm)
 
-    return np.squeeze(coef)
+    return coef
 
 
 

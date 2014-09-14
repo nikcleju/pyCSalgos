@@ -57,7 +57,7 @@ class AnalysisL1Min(AnalysisSparseSolver):
                 outdata[:, i] = nesta(acqumatrix, None, measurements[:,i], muf, self.stopval, opts)[0]
         else:
             raise ValueError("Algorithm '%s' does not exist", self.algorithm)
-        return np.squeeze(outdata)
+        return outdata
 
 
 
