@@ -24,9 +24,9 @@ def run_test():
     rhos = numpy.arange(0.1, 1, 0.2)
 
     print "Running synthesis phase transition..."
-    pt = SynthesisPhaseTransition(signal_size, dict_size, deltas, rhos, 3,
+    pt = SynthesisPhaseTransition(signal_size, dict_size, deltas, rhos, 3, numpy.inf,
                                   [
-                                  OrthogonalMatchingPursuit(1e-6, algorithm="sparsify_QR"),
+                                  OrthogonalMatchingPursuit(0, algorithm="sparsify_QR"),
                                   #IterativeHardThresholding(1e-10, sparsity="real", maxiter=1000)
                                   #ApproximateMessagePassing(1e-6, 1000),
                                   ])

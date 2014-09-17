@@ -18,6 +18,7 @@ import matplotlib.colors as mcolors
 import datetime
 import hdf5storage
 import cPickle
+import multiprocessing
 
 import generate as gen
 
@@ -310,7 +311,7 @@ class SynthesisPhaseTransition(PhaseTransition):
     def __init__(self, signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers=[]):
         super(SynthesisPhaseTransition, self).__init__(signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers)
 
-    def run(self, solve=True, check=False):
+    def run(self, solve=True, check=False, processes=None):
 
         # Both can be False: only generates compressed sensing problems data
         #if solve is False and check is False:
@@ -330,6 +331,7 @@ class SynthesisPhaseTransition(PhaseTransition):
             # a 2D list of dictionaries, size deltas x rhos
             self.simData = [[dict() for _ in self.rhos] for _ in self.deltas]
 
+        # Generate data if needed
         for idelta, delta in enumerate(self.deltas):
             for irho, rho in enumerate(self.rhos):
                 m = int(round(self.signaldim * delta, 0))  # delta = m/n
@@ -346,29 +348,81 @@ class SynthesisPhaseTransition(PhaseTransition):
                     self.simData[idelta][irho][u'realgamma'] = realgamma
                     self.simData[idelta][irho][u'realsupport'] = realsupport
                     self.simData[idelta][irho][u'cleardata'] = cleardata
-                else:
-                    measurements = self.simData[idelta][irho][u'measurements']
-                    acqumatrix = self.simData[idelta][irho][u'acqumatrix']
-                    realdata = self.simData[idelta][irho][u'realdata']
-                    dictionary = self.simData[idelta][irho][u'dictionary']
-                    realgamma = self.simData[idelta][irho][u'realgamma']
-                    realsupport = self.simData[idelta][irho][u'realsupport']
-                    cleardata = self.simData[idelta][irho][u'cleardata']
 
-                realdict = {'data': realdata, 'gamma': realgamma, 'support': realsupport}
+        # Only run if solve or check
+        if solve or check:
 
-                if check is True:
-                    for iERCsolver, ERCsolver in enumerate(self.ERCsolvers):
-                        self.ERCsuccess[iERCsolver, idelta, irho] = ERCsolver.checkERC(acqumatrix, dictionary,
-                                                                                       realsupport)
-                if solve is True:
-                    for isolver, solver in enumerate(self.solvers):
-                        gamma = solver.solve(measurements, np.dot(acqumatrix, dictionary), realdict)
-                        data = np.dot(dictionary, gamma)
-                        errors = data - realdata
-                        for i in range(errors.shape[1]):
-                            errors[:, i] = errors[:, i] / np.linalg.norm(realdata[:, i])
-                            self.err[isolver, idelta, irho][i] = np.sqrt(sum(errors[:, i] ** 2))
+            # Number of processes
+            if processes is None:
+                processes = multiprocessing.cpu_count()
+
+            # Generate map parameters
+            task_parameters = [(self.solvers,
+                                self.ERCsolvers,
+                                self.simData[idelta][irho][u'measurements'],
+                                self.simData[idelta][irho][u'acqumatrix'],
+                                self.simData[idelta][irho][u'dictionary'],
+                                self.simData[idelta][irho][u'realdata'],
+                                self.simData[idelta][irho][u'realgamma'],
+                                self.simData[idelta][irho][u'realsupport'],
+                                self.simData[idelta][irho][u'cleardata'],
+                                solve,
+                                check
+                               )
+                               for idelta in range(len(self.deltas)) for irho in range(len(self.rhos))
+                               ]
+
+            # Run in parallel
+            pool = multiprocessing.Pool(processes=processes)
+            results = pool.map(run_synthesis_delta_rho, task_parameters)
+
+            # Process results
+            result_iter = iter(results)
+            for idelta in range(len(self.deltas)):
+                for irho in range(len(self.rhos)):
+                    result = next(result_iter)
+                    if solve is True:
+                        self.err[:,idelta,irho,:] = result[0]
+                    if check is True:
+                        self.ERCsuccess[:,idelta,irho,:] = result[1]
+
+
+def run_synthesis_delta_rho(tuple_data):
+
+    # Unpack tuple
+    solvers = tuple_data[0]
+    ERCsolvers = tuple_data[1]
+    measurements = tuple_data[2]
+    acqumatrix = tuple_data[3]
+    dictionary = tuple_data[4]
+    realdata = tuple_data[5]
+    realgamma = tuple_data[6]
+    realsupport = tuple_data[7]
+    cleardata = tuple_data[8]
+    solve = tuple_data[9]
+    check = tuple_data[10]
+
+    realdict = {'data': realdata, 'gamma': realgamma, 'support': realsupport}
+
+    # Prepare results
+    num_data = measurements.shape[1]
+    ERCsuccess = np.zeros(shape=(len(ERCsolvers), num_data), dtype=bool)
+    err = np.zeros(shape=(len(solvers), num_data))
+
+    if check is True:
+        for iERCsolver, ERCsolver in enumerate(ERCsolvers):
+            #self.ERCsuccess[iERCsolver, idelta, irho] = ERCsolver.checkERC(acqumatrix, dictionary, realsupport)
+            ERCsuccess[iERCsolver] = ERCsolver.checkERC(acqumatrix, dictionary, realsupport)
+    if solve is True:
+        for isolver, solver in enumerate(solvers):
+            gamma = solver.solve(measurements, np.dot(acqumatrix, dictionary), realdict)
+            data = np.dot(dictionary, gamma)
+            errors = data - realdata
+            for i in range(errors.shape[1]):
+                errors[:, i] = errors[:, i] / np.linalg.norm(realdata[:, i])
+                err[isolver][i] = np.sqrt(sum(errors[:, i] ** 2))
+
+    return err, ERCsuccess
 
 
 # TODO: maybe needs refactoring, it's very similar to PhaseTransition()
@@ -380,7 +434,7 @@ class AnalysisPhaseTransition(PhaseTransition):
     def __init__(self, signaldim, operatordim, deltas, rhos, numdata, snr_db, solvers=[]):
         super(AnalysisPhaseTransition, self).__init__(signaldim, operatordim, deltas, rhos, numdata, snr_db, solvers)
 
-    def run(self, solve=True, check=False):
+    def run(self, solve=True, check=False, processes=None):
 
         # Both can be False: only generates compressed sensing problems data
         #if solve is False and check is False:
@@ -400,14 +454,11 @@ class AnalysisPhaseTransition(PhaseTransition):
             # a 2D list of dictionaries, size deltas x rhos
             self.simData = [[dict() for _ in self.rhos] for _ in self.deltas]
 
+        # Generate data if needed
         for idelta, delta in enumerate(self.deltas):
             for irho, rho in enumerate(self.rhos):
-                # DEBUG:
-                #print "delta = " + str(delta) + ", rho = " + str(rho)
-
                 m = int(round(self.signaldim * delta, 0))  # delta = m/n
                 l = self.signaldim - int(round(m * rho, 0))  # rho = (n-l)/m
-                # l = int(round(self.signaldim - m * rho, 0))  #TODO: DEBUG, TO CHECK IF THE SAME!!
 
                 if not self.simData[idelta][irho]:
                     measurements, acqumatrix, realdata, operator, realgamma, realcosupport, cleardata = \
@@ -420,41 +471,86 @@ class AnalysisPhaseTransition(PhaseTransition):
                     self.simData[idelta][irho][u'realgamma'] = realgamma
                     self.simData[idelta][irho][u'realcosupport'] = realcosupport
                     self.simData[idelta][irho][u'cleardata'] = cleardata
-                else:
-                    measurements = self.simData[idelta][irho][u'measurements']
-                    acqumatrix = self.simData[idelta][irho][u'acqumatrix']
-                    realdata = self.simData[idelta][irho][u'realdata']
-                    operator = self.simData[idelta][irho][u'operator']
-                    realgamma = self.simData[idelta][irho][u'realgamma']
-                    realcosupport = self.simData[idelta][irho][u'realcosupport']
-                    cleardata = self.simData[idelta][irho][u'cleardata']
 
-                # TODO: DEBUG HACK:
-                # savename = 'signals_delta' + str(delta) + '_rho' + str(rho) + ".mat"
-                # mdict = scipy.io.loadmat(savename)#, {'operator':Omega, 'measurements':y,'acqumatrix':M, 'realdata':x0})
-                # measurements = mdict['measurements']
-                # acqumatrix = mdict['acqumatrix']
-                # realdata = mdict['realdata']
-                # operator = mdict['operator']
-                # realcosupport = mdict['realcosupport']
+        # Only run if solve or check
+        if solve or check:
 
-                realdict = {'data': realdata, 'gamma': realgamma, 'cosupport': realcosupport}
+            # Number of processes
+            if processes is None:
+                processes = multiprocessing.cpu_count()
 
-                realsupport = np.zeros((operator.shape[0] - realcosupport.shape[0], realcosupport.shape[1]), dtype=int)
-                for i in range(realcosupport.shape[1]):
-                    realsupport[:, i] = np.setdiff1d(range(operator.shape[0]), realcosupport[:, i])
+            # Generate map parameters
+            task_parameters = [(self.solvers,
+                                self.ERCsolvers,
+                                self.simData[idelta][irho][u'measurements'],
+                                self.simData[idelta][irho][u'acqumatrix'],
+                                self.simData[idelta][irho][u'operator'],
+                                self.simData[idelta][irho][u'realdata'],
+                                self.simData[idelta][irho][u'realgamma'],
+                                self.simData[idelta][irho][u'realcosupport'],
+                                self.simData[idelta][irho][u'cleardata'],
+                                solve,
+                                check
+                               )
+                               for idelta in range(len(self.deltas)) for irho in range(len(self.rhos))
+            ]
 
-                if check is True:
-                    for iERCsolver, ERCsolver in enumerate(self.ERCsolvers):
-                        self.ERCsuccess[iERCsolver, idelta, irho] = ERCsolver.checkERC(acqumatrix, operator,
-                                                                                       realsupport)
-                if solve is True:
-                    for isolver, solver in enumerate(self.solvers):
-                        data = solver.solve(measurements, acqumatrix, operator, realdict)
-                        errors = data - realdata
-                        for i in range(errors.shape[1]):
-                            errors[:, i] = errors[:, i] / np.linalg.norm(realdata[:, i])
-                            self.err[isolver, idelta, irho][i] = np.sqrt(sum(errors[:, i] ** 2))
+            # Run tasks
+            if processes is not 1:
+                pool = multiprocessing.Pool(processes=processes)
+                results = pool.map(run_analysis_delta_rho, task_parameters)
+            else:
+                results = map(run_analysis_delta_rho, task_parameters)
+
+            # Process results
+            result_iter = iter(results)
+            for idelta in range(len(self.deltas)):
+                for irho in range(len(self.rhos)):
+                    result = next(result_iter)
+                    if solve is True:
+                        self.err[:,idelta,irho,:] = result[0]
+                    if check is True:
+                        self.ERCsuccess[:,idelta,irho,:] = result[1]
+
+
+def run_analysis_delta_rho(tuple_data):
+
+    # Unpack tuple
+    solvers = tuple_data[0]
+    ERCsolvers = tuple_data[1]
+    measurements = tuple_data[2]
+    acqumatrix = tuple_data[3]
+    operator = tuple_data[4]
+    realdata = tuple_data[5]
+    realgamma = tuple_data[6]
+    realcosupport = tuple_data[7]
+    cleardata = tuple_data[8]
+    solve = tuple_data[9]
+    check = tuple_data[10]
+
+    realdict = {'data': realdata, 'gamma': realgamma, 'cosupport': realcosupport}
+
+    realsupport = np.zeros((operator.shape[0] - realcosupport.shape[0], realcosupport.shape[1]), dtype=int)
+    for i in range(realcosupport.shape[1]):
+        realsupport[:, i] = np.setdiff1d(range(operator.shape[0]), realcosupport[:, i])
+
+    # Prepare results
+    num_data = measurements.shape[1]
+    ERCsuccess = np.zeros(shape=(len(ERCsolvers), num_data), dtype=bool)
+    err = np.zeros(shape=(len(solvers), num_data))
+
+    if check is True:
+        for iERCsolver, ERCsolver in enumerate(ERCsolvers):
+            ERCsuccess[iERCsolver] = ERCsolver.checkERC(acqumatrix, operator, realsupport)
+    if solve is True:
+        for isolver, solver in enumerate(solvers):
+            data = solver.solve(measurements, acqumatrix, operator, realdict)
+            errors = data - realdata
+            for i in range(errors.shape[1]):
+                errors[:, i] = errors[:, i] / np.linalg.norm(realdata[:, i])
+                err[isolver,i] = np.sqrt(sum(errors[:, i] ** 2))
+
+    return err, ERCsuccess
 
 
 # TODO: add many more parameters
