@@ -70,7 +70,13 @@ class AnalysisBySynthesis(AnalysisSparseSolver):
         :return: Value of the multiplier
         """
 
-        mul = self.nullspace_multiplier
+        operatorsize, signalsize = operator.shape
+        # Find nullspace
+        dictionary = np.linalg.pinv(operator)
+        U,S,Vt = np.linalg.svd(dictionary)
+        nullspace = Vt[-(operatorsize-signalsize):, :]
+
+        mul = self.nullspace_multiplier / np.linalg.norm(nullspace, 'fro') * nullspace.shape[0] * np.linalg.norm(np.dot(acqumatrix, dictionary), 'fro') / acqumatrix.shape[0]
         #mul = self.nullspace_multiplier *\
         #      np.linalg.norm(np.dot(acqumatrix, dictionary), 'fro') / np.linalg.norm(nullspace, 'fro')
         #mul = self.nullspace_multiplier * \

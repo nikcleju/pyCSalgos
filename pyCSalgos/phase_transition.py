@@ -463,7 +463,7 @@ class AnalysisPhaseTransition(PhaseTransition):
                 if not self.simData[idelta][irho]:
                     measurements, acqumatrix, realdata, operator, realgamma, realcosupport, cleardata = \
                         gen.make_analysis_compressed_sensing_problem(
-                            m, self.signaldim, self.dictdim, l, self.numdata, self.snr_db, operator="randn", acquisition="randn")
+                            m, self.signaldim, self.dictdim, l, self.numdata, self.snr_db, operator="tightframe", acquisition="randn")
                     self.simData[idelta][irho][u'measurements'] = measurements
                     self.simData[idelta][irho][u'acqumatrix'] = acqumatrix
                     self.simData[idelta][irho][u'realdata'] = realdata
