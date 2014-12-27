@@ -10,6 +10,7 @@ Class for fast generation of phase-transition graphs
 
 from six import with_metaclass
 from abc import ABCMeta, abstractmethod
+import types
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -113,7 +114,22 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
             RuntimeError('Neither showing nor saving plot!')
 
         if basename is None:
-            basename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")
+            strdatetime = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")
+            basename = []
+            if solve is True:
+                if subplot is True:
+                    basename = basename + [strdatetime + "_err"]
+                else:
+                    basename = basename + [strdatetime + "_err_" + str(i) for i in range(len(self.solvers))]
+            if check is True:
+                if subplot is True:
+                    basename = basename + [strdatetime + "_erc_"]
+                else:
+                    basename = basename + [strdatetime + "_erc_" + str(i) for i in range(len(self.ERCsolvers))]
+        # if a string, convert to a list
+        if isinstance(basename, types.StringTypes):
+            basename = [basename]
+        iterFilename = iter(basename)
 
         datasources = []
         reverse_colormap = []
@@ -187,13 +203,15 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
 
                 if not subplot:
                     # separate figure, save each
+                    filename = next(iterFilename)
                     for ext in saveexts:
-                        plt.savefig(basename + '_' + str(idatasource) + '_' + str(icurrentdata) + '.' + ext, bbox_inches='tight')
+                        plt.savefig(filename + '.' + ext, bbox_inches='tight')
             if subplot:
                 #plt.tight_layout()
                 # single figure, save at finish
+                filename = next(iterFilename)
                 for ext in saveexts:
-                    plt.savefig(basename + '_' + str(idatasource) + '.' + ext, bbox_inches='tight')
+                    plt.savefig(filename + '.' + ext, bbox_inches='tight')
             if show:
                 plt.draw()
         if show:
@@ -281,26 +299,58 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         return obj
 
 
-    def compute_global_average_error(self, shape, thresh=None):
+    def compute_global_average_error(self, shape, thresh=None, textfilename=None):
         """
         Returns an array same shape as 'solvers' array, containing the average value of the phase transition
         """
         avgerr = self._compute_average(self.err, thresh)
+        global_avgerr = np.mean(avgerr, (1,2))
+        if textfilename is not None:
+            with open(textfilename, "w") as f:
+                for solvername, value in zip(self.solverNames, global_avgerr):
+                    f.write(solvername + ': ' + str(value) + '\n')
+
         return np.mean(avgerr, (1,2)).reshape(shape, order='C') # mean over all axes except 0, reshape in row order
 
-    def plot_average_error(self, shape, thresh=None):
+    def plot_global_error(self, shape, thresh=None, show=True, basename=None, saveexts=[], textfilename=None, scaling = ["min", "max"]):
         """
         Plots an array same shape as 'solvers' array, containing the average value of the phase transition
         """
+
+        if show is False and saveexts is None and textfilename is None:
+            RuntimeError('Neither showing nor saving plot nor writing data!')
+
+        if basename is None:
+            basename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")
+
         plt.figure()
-        values = self.compute_global_average_error(shape, thresh)
-        values = values - np.min(values)  # translate minimum to 0
-        values = values / np.max(values)  # translate maximum to 1
+        values = self.compute_global_average_error(shape, thresh, textfilename)
+
+        # Normalize
+        minvalue = np.min(values)
+        maxvalue = np.max(values)
+        if scaling == "percent_max":
+            values = values / maxvalue
+        else:
+            if scaling[0] == "min":
+                scaling[0] = minvalue
+            if scaling[1] == "max":
+                scaling[1] = maxvalue
+            values = scaling[0] + (values - minvalue) / (maxvalue - minvalue) * (scaling[1] - scaling[0])
+
+        #values = values - np.min(values)  # translate minimum to 0
+        #values = values / np.max(values)  # translate maximum to 1
+
         if thresh is None:
             plot_phase_transition(values, reverse_colormap = True, transpose=False)
         else:
             plot_phase_transition(values, reverse_colormap = False, transpose=False)
-        plt.show()
+
+        if show:
+            plt.show()
+
+        for ext in saveexts:
+            plt.savefig(basename + '.' + ext, bbox_inches='tight')
 
 
 class SynthesisPhaseTransition(PhaseTransition):
@@ -308,14 +358,20 @@ class SynthesisPhaseTransition(PhaseTransition):
     Class for running and plotting synthesis-based phase transitions
     """
 
-    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers=[]):
+    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers=[], dict_type="randn", acqu_type="randn"):
         super(SynthesisPhaseTransition, self).__init__(signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers)
+        self.dict_type=dict_type
+        self.acqu_type=acqu_type
 
     def run(self, solve=True, check=False, processes=None):
 
         # Both can be False: only generates compressed sensing problems data
         #if solve is False and check is False:
         #    RuntimeError('Nothing to run (both solve and check are False)')
+
+        # Number of processes
+        if processes is None:
+            processes = multiprocessing.cpu_count()
 
         # Initialize zero-filled arrays
         if solve is True:
@@ -340,7 +396,7 @@ class SynthesisPhaseTransition(PhaseTransition):
                 if not self.simData[idelta][irho]:
                     measurements, acqumatrix, realdata, dictionary, realgamma, realsupport, cleardata = \
                         gen.make_compressed_sensing_problem(
-                            m, self.signaldim, self.dictdim, k, self.numdata, self.snr_db, "randn", "randn")
+                            m, self.signaldim, self.dictdim, k, self.numdata, self.snr_db, self.dict_type, self.acqu_type)
                     self.simData[idelta][irho][u'measurements'] = measurements
                     self.simData[idelta][irho][u'acqumatrix'] = acqumatrix
                     self.simData[idelta][irho][u'realdata'] = realdata
@@ -351,10 +407,6 @@ class SynthesisPhaseTransition(PhaseTransition):
 
         # Only run if solve or check
         if solve or check:
-
-            # Number of processes
-            if processes is None:
-                processes = multiprocessing.cpu_count()
 
             # Generate map parameters
             task_parameters = [(self.solvers,
@@ -431,56 +483,88 @@ class AnalysisPhaseTransition(PhaseTransition):
     Class for running and plotting analysis-based phase transitions
     """
 
-    def __init__(self, signaldim, operatordim, deltas, rhos, numdata, snr_db, solvers=[]):
+    def __init__(self, signaldim, operatordim, deltas, rhos, numdata, snr_db, solvers=[], oper_type="randn", acqu_type="randn"):
         super(AnalysisPhaseTransition, self).__init__(signaldim, operatordim, deltas, rhos, numdata, snr_db, solvers)
+        self.oper_type=oper_type
+        self.acqu_type=acqu_type
 
     def run(self, solve=True, check=False, processes=None):
 
-        # Both can be False: only generates compressed sensing problems data
-        #if solve is False and check is False:
-        #    RuntimeError('Nothing to run (both solve and check are False)')
+        # Number of processes
+        if processes is None:
+            processes = multiprocessing.cpu_count()
+        pool = None
 
         # Initialize zero-filled arrays
         if solve is True:
-            #self.err = [np.zeros(shape=(len(self.deltas), len(self.rhos), self.numdata)) for _ in self.solvers]
             self.err = np.zeros(shape=(len(self.solvers), len(self.deltas), len(self.rhos), self.numdata))
         if check is True:
-            #self.ERCsuccess = [np.zeros(shape=(len(self.deltas), len(self.rhos), self.numdata), dtype=bool)
-            #                   for _ in self.ERCsolvers]
             self.ERCsuccess = \
                 np.zeros(shape=(len(self.ERCsolvers), len(self.deltas), len(self.rhos), self.numdata), dtype=bool)
 
         if not self.simData:
-            # a 2D list of dictionaries, size deltas x rhos
             self.simData = [[dict() for _ in self.rhos] for _ in self.deltas]
 
         # Generate data if needed
-        for idelta, delta in enumerate(self.deltas):
-            for irho, rho in enumerate(self.rhos):
-                m = int(round(self.signaldim * delta, 0))  # delta = m/n
-                l = self.signaldim - int(round(m * rho, 0))  # rho = (n-l)/m
+        # for idelta, delta in enumerate(self.deltas):
+        #     for irho, rho in enumerate(self.rhos):
+        #         m = int(round(self.signaldim * delta, 0))  # delta = m/n
+        #         l = self.signaldim - int(round(m * rho, 0))  # rho = (n-l)/m
+        #
+        #         if not self.simData[idelta][irho]:
+        #             measurements, acqumatrix, realdata, operator, realgamma, realcosupport, cleardata = \
+        #                 gen.make_analysis_compressed_sensing_problem(
+        #                     m, self.signaldim, self.dictdim, l, self.numdata, self.snr_db, operator=self.oper_type, acquisition=self.acqu_type)
+        #             self.simData[idelta][irho][u'measurements'] = measurements
+        #             self.simData[idelta][irho][u'acqumatrix'] = acqumatrix
+        #             self.simData[idelta][irho][u'realdata'] = realdata
+        #             self.simData[idelta][irho][u'operator'] = operator
+        #             self.simData[idelta][irho][u'realgamma'] = realgamma
+        #             self.simData[idelta][irho][u'realcosupport'] = realcosupport
+        #             self.simData[idelta][irho][u'cleardata'] = cleardata
 
-                if not self.simData[idelta][irho]:
-                    measurements, acqumatrix, realdata, operator, realgamma, realcosupport, cleardata = \
-                        gen.make_analysis_compressed_sensing_problem(
-                            m, self.signaldim, self.dictdim, l, self.numdata, self.snr_db, operator="randn", acquisition="randn")
-                    self.simData[idelta][irho][u'measurements'] = measurements
-                    self.simData[idelta][irho][u'acqumatrix'] = acqumatrix
-                    self.simData[idelta][irho][u'realdata'] = realdata
-                    self.simData[idelta][irho][u'operator'] = operator
-                    self.simData[idelta][irho][u'realgamma'] = realgamma
-                    self.simData[idelta][irho][u'realcosupport'] = realcosupport
-                    self.simData[idelta][irho][u'cleardata'] = cleardata
+        gen_parameters = [(int(round(self.signaldim * delta, 0)), # this is m,  delta = m/n
+                            self.signaldim,
+                            self.dictdim,
+                            self.signaldim - int(round(
+                                int(round(self.signaldim * delta, 0))  # this is m
+                                * rho, 0)), # this is l,  rho = (n-l)/m
+                            self.numdata,
+                            self.snr_db,
+                            self.oper_type,
+                            self.acqu_type,
+                           )
+                           for idelta, delta in enumerate(self.deltas)
+                           for irho, rho in enumerate(self.rhos)
+                           if not self.simData[idelta][irho]
+        ]
+
+        # Run generation tasks
+        if processes is not 1:
+            if pool is None:
+                pool = multiprocessing.Pool(processes=processes)
+            results = pool.map(tuplewrap_make_analysis_compressed_sensing_problem, gen_parameters)
+        else:
+            results = map(tuplewrap_make_analysis_compressed_sensing_problem, gen_parameters)
+
+        # Process generation results
+        result_iter = iter(results)
+        for idelta in range(len(self.deltas)):
+            for irho in range(len(self.rhos)):
+                result = next(result_iter)
+                self.simData[idelta][irho][u'measurements'] = result[0]
+                self.simData[idelta][irho][u'acqumatrix'] = result[1]
+                self.simData[idelta][irho][u'realdata'] = result[2]
+                self.simData[idelta][irho][u'operator'] = result[3]
+                self.simData[idelta][irho][u'realgamma'] = result[4]
+                self.simData[idelta][irho][u'realcosupport'] = result[5]
+                self.simData[idelta][irho][u'cleardata'] = result[6]
 
         # Only run if solve or check
         if solve or check:
 
-            # Number of processes
-            if processes is None:
-                processes = multiprocessing.cpu_count()
-
-            # Generate map parameters
-            task_parameters = [(self.solvers,
+            # Make run parameters
+            run_parameters = [(self.solvers,
                                 self.ERCsolvers,
                                 self.simData[idelta][irho][u'measurements'],
                                 self.simData[idelta][irho][u'acqumatrix'],
@@ -495,12 +579,17 @@ class AnalysisPhaseTransition(PhaseTransition):
                                for idelta in range(len(self.deltas)) for irho in range(len(self.rhos))
             ]
 
-            # Run tasks
+            print "Starting solver processes:"
+            time_start = datetime.datetime.now()
+            print time_start.strftime("%Y-%m-%d --- %H:%M:%S:%f")
+
+            # Run run tasks
             if processes is not 1:
-                pool = multiprocessing.Pool(processes=processes)
-                results = pool.map(run_analysis_delta_rho, task_parameters)
+                if pool is None:
+                    pool = multiprocessing.Pool(processes=processes)
+                results = pool.map(run_analysis_delta_rho, run_parameters)
             else:
-                results = map(run_analysis_delta_rho, task_parameters)
+                results = map(run_analysis_delta_rho, run_parameters)
 
             # Process results
             result_iter = iter(results)
@@ -512,6 +601,14 @@ class AnalysisPhaseTransition(PhaseTransition):
                     if check is True:
                         self.ERCsuccess[:,idelta,irho,:] = result[1]
 
+            time_end = datetime.datetime.now()
+            print "End time: " + time_end.strftime("%Y-%m-%d --- %H:%M:%S:%f")
+            print "Elapsed: " + str((time_end - time_start).seconds) + " seconds"
+
+
+# this can be avoided in python 3.3
+def tuplewrap_make_analysis_compressed_sensing_problem(tuple_data):
+    return gen.make_analysis_compressed_sensing_problem(*tuple_data)
 
 def run_analysis_delta_rho(tuple_data):
 

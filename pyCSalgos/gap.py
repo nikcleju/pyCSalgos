@@ -14,6 +14,7 @@ import numpy as np
 import scipy.linalg
 
 from base import AnalysisSparseSolver, ERCcheckMixin
+from utils import fast_lstsq
 
 
 class GreedyAnalysisPursuit(ERCcheckMixin, AnalysisSparseSolver):
@@ -50,6 +51,8 @@ class GreedyAnalysisPursuit(ERCcheckMixin, AnalysisSparseSolver):
                      "l2solver" : 'pseudoinverse',
                      "noise_level": self.stopval}
         for i in range(numdata):
+            # update epsilon
+            gapparams['noise_level'] = np.linalg.norm(measurements[:,i],2)*self.stopval
             outdata[:, i] = greedy_analysis_pursuit(measurements[:,i], acqumatrix, acqumatrix.T, operator, operator.T,
                                                     gapparams, np.zeros(operator.shape[1]))[0]
         return outdata
@@ -130,7 +133,7 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
                 # Solve least-squares problem
                 # FAST: Use QR and solve_triang() instead of lstsq()
                 #xhat = np.linalg.lstsq(Omega_tilde, y_tilde)[0]
-                xhat = fast_lsqst(Omega_tilde, y_tilde)
+                xhat = fast_lstsq(Omega_tilde, y_tilde)
                 #assert(np.linalg.norm(xhat-xhat2)<1e-10)
 
                 # Check tolerance below required, and adjust Lagr multiplier accordingly
@@ -375,14 +378,4 @@ def check_stopping_criteria(xhat, xinit, maxcoef, lagmult, Lambdahat, params):
 
     return 0
 
-def fast_lsqst(A, y):
-    m,n = A.shape
-    if m >= n:
-        Q, R = scipy.linalg.qr(A, mode='economic') # qr decomposition of A
-        Qb = np.dot(Q.T,y) # computing Q^T*b (project b onto the range of A)
-        x_qr = scipy.linalg.solve_triangular(R, Qb)
-    else:
-        # http://en.wikipedia.org/wiki/QR_decomposition#Using_for_solution_to_linear_inverse_problems
-        Q, R = scipy.linalg.qr(A.T, mode='economic') # qr decomposition of A.T
-        x_qr = np.dot(Q, scipy.linalg.solve_triangular(R, y))
-    return x_qr
+

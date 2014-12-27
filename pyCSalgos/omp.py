@@ -150,15 +150,20 @@ def _orthogonal_matching_pursuit(data, dictionary, stopval, algorithm="sklearn")
         ompopts["nargout"] = 1
         if stopval < 1:
             ompopts["stopCrit"] = "mse"
+            # will be changed later
+            ompopts["stopTol"] = stopval
         else:
             ompopts["stopCrit"] = "M"
-        ompopts["stopTol"] = stopval
+            ompopts["stopTol"] = stopval
         if len(data.shape) == 1:
             data = np.atleast_2d(data)
             if data.shape[0] < data.shape[1]:
                 data = np.transpose(data)
         coef = np.zeros((dictionary.shape[1], data.shape[1]))
         for i in range(data.shape[1]):
+            if ompopts["stopCrit"] == "mse":
+                # convert error tolerance to match what OMP expects
+                ompopts["stopTol"] = (np.linalg.norm(data[:,i],2) * stopval)**2 / data.shape[0]
             coef[:,i] = omp_sparsify_greed_omp_qr(data[:,i], dictionary, dictionary.shape[1], ompopts)
         return coef
 

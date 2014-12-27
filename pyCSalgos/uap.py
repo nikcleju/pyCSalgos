@@ -9,17 +9,17 @@ Provides Unconstrained Analysis Pursuit(GAP) for analysis-based recovery
 
 import math
 import scipy
-
 import numpy as np
 
 from base import AnalysisSparseSolver
+from utils import fast_lstsq
 
 
 class UnconstrainedAnalysisPursuit(AnalysisSparseSolver):
 
     # All parameters related to the algorithm itself are given here.
     # The data and dictionary are given to the run() method
-    def __init__(self, stopval, lambda1, lambda2):
+    def __init__(self, stopval, lambda1, lambda2, lambda2_type="scaled"):
 
         # parameter check
         if stopval < 0:
@@ -32,6 +32,7 @@ class UnconstrainedAnalysisPursuit(AnalysisSparseSolver):
         self.stopval = stopval
         self.lambda1 = lambda1
         self.lambda2 = lambda2
+        self.lambda2_type = lambda2_type
 
     def __str__(self):
         #return "UnconstrainedAnalysisPursuit(" + str(self.stopval) + ', ' + str(self.lambda1) + ', ' + str(self.lambda2) + ")"
@@ -50,19 +51,39 @@ class UnconstrainedAnalysisPursuit(AnalysisSparseSolver):
         signalsize = acqumatrix.shape[1]
         outdata = np.zeros((signalsize, numdata))
 
+        OmegaPinv = None
+        P = None
+        lambda1 = self.lambda1
+        if self.lambda2_type == "value":
+            lambda2 = self.lambda2
+        elif self.lambda2_type == "scaled":
+            gammasize, signalsize = operator.shape
+            OmegaPinv = np.linalg.pinv(operator)
+            U,S,Vt = np.linalg.svd(OmegaPinv)
+            P = Vt[-(gammasize-signalsize):,:]
+            #mul = self.nullspace_multiplier / np.linalg.norm(nullspace, 'fro') * nullspace.shape[0] * np.linalg.norm(np.dot(acqumatrix, dictionary), 'fro') / acqumatrix.shape[0]
+            lambda2 = self.lambda2 / np.linalg.norm(P, 'fro') * P.shape[0] * np.linalg.norm(np.dot(acqumatrix, OmegaPinv), 'fro') / acqumatrix.shape[0]
+        if OmegaPinv is None:
+            OmegaPinv = np.linalg.pinv(operator)
+        if P is None:
+            gammasize, signalsize = operator.shape
+            U,S,Vt = np.linalg.svd(OmegaPinv)
+            P = Vt[-(gammasize-signalsize):,:]
         for i in range(numdata):
-            outdata[:, i] = unconstrained_analysis_pursuit(measurements[:,i], acqumatrix, operator, self.lambda1, self.lambda2)
+            outdata[:, i] = unconstrained_analysis_pursuit(measurements[:,i], acqumatrix, operator, lambda1, lambda2, OmegaPinv=OmegaPinv, P=P)
 
         return outdata
 
-def unconstrained_analysis_pursuit(measurements, acqumatrix, operator, lambda1, lambda2):
+def unconstrained_analysis_pursuit(measurements, acqumatrix, operator, lambda1, lambda2, OmegaPinv=None, P=None):
 
     gammasize, signalsize = operator.shape
     gamma = np.zeros(gammasize)
     Lambdahat = np.arange(gammasize)
-    OmegaPinv = np.linalg.pinv(operator)
-    U,S,Vt = np.linalg.svd(OmegaPinv)
-    P = Vt[-(gammasize-signalsize):,:]
+    if OmegaPinv is None:
+        OmegaPinv = np.linalg.pinv(operator)
+    if P is None:
+        U,S,Vt = np.linalg.svd(OmegaPinv)
+        P = Vt[-(gammasize-signalsize):,:]
     residual = measurements - np.dot(np.dot(acqumatrix, OmegaPinv), gamma)
 
     while True:  # exit from inside with break
@@ -74,13 +95,18 @@ def unconstrained_analysis_pursuit(measurements, acqumatrix, operator, lambda1, 
         system_matrix = np.concatenate((system_matrix, lambda2 * P))
         y_tilde = np.concatenate((measurements, np.zeros(I_Lambda_k.shape[0] + P.shape[0])))
         # solve
-        gamma = np.linalg.lstsq(system_matrix, y_tilde)[0]
+        #gamma = np.linalg.lstsq(system_matrix, y_tilde)[0]
+        # Use fast version
+        gamma = fast_lstsq(system_matrix, y_tilde)
 
         # Atom selection
         maxval = np.amax(np.absolute(gamma[Lambdahat]))
         maxrow = Lambdahat[np.argmax(np.absolute(gamma[Lambdahat]))]
-        #assert(maxrow in Lambdahat)
 
+        # Scale with GAP or OMP criterion
+        #  alternatively: max(maxval, lambda1*maxval)
+        if lambda1 > 1:
+            maxval = lambda1*maxval
         # Exit condition
         if maxval < 1e-6:
             break

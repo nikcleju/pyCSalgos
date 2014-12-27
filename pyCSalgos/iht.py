@@ -21,7 +21,7 @@ class IterativeHardThresholding(SparseSolver):
     Iterative Hard Thresholding
     """
 
-    def __init__(self, stoptol, sparsity="half", maxiter=70000):
+    def __init__(self, stoptol, deltatol=1e-10, sparsity="half", maxiter=70000, debias=True):
 
         # parameter check
         if stoptol < 0:
@@ -30,8 +30,10 @@ class IterativeHardThresholding(SparseSolver):
             raise ValueError("number of iterations is not positive")
 
         self.stoptol = stoptol
+        self.deltatol = deltatol
         self.maxiter = maxiter
         self.sparsity = sparsity
+        self.debias = debias
 
     def __str__(self):
         return "IHT (" + str(self.stoptol) + " | " + str(self.maxiter) + " | " +  str(self.sparsity) + ")"
@@ -73,25 +75,52 @@ class IterativeHardThresholding(SparseSolver):
             else:
                 M = self.sparsity  #TODO check type
 
-            coef[:, i] = _iht(dictionary, data[:, i], sparsity=M, tol=self.stoptol, maxiter=self.maxiter)
+            coef[:, i] = _iht(dictionary, data[:, i], sparsity=M, errortol=self.stoptol, deltatol=self.deltatol, maxiter=self.maxiter)
 
-            # Nic's debias:
-            thr = 1e-6;
-            supp = (np.abs(coef[:, i]) > thr)
-            gamma2 = coef[:, i].copy()
-            gamma2[supp] = np.dot(np.linalg.pinv(dictionary[:, supp]), data[:, i])
-            gamma2[~supp] = 0
-            # Rule of thumb check is debiasing went ok: if very different
-            #  from original gamma, debiasing is to have gone bad
-            if np.linalg.norm(coef[:, i] - gamma2) < 2 * np.linalg.norm(coef[:, i]):
-                coef[:, i] = gamma2
+            # Debias
+            if self.debias == True:
+                # keep first measurements/2 atoms
+                cnt = int(round(data.shape[0]/2.0)) # how many atoms to keep
+                srt = np.sort(np.abs(coef[:,i]))[::-1]
+                thr = (srt[cnt-1] + srt[cnt])/2.0  # required threshold
+                supp = (np.abs(coef[:,i]) > thr)
+            elif self.debias == "real":
+                cnt = realdict['support'].shape[0]
+                srt = np.sort(np.abs(coef[:,i]))[::-1]
+                thr = (srt[cnt-1] + srt[cnt])/2.0  # required threshold
+                supp = (np.abs(coef[:,i]) > thr)
+            elif self.debias == "all":
+                cnt = data.shape[0]
+                srt = np.sort(np.abs(coef[:,i]))[::-1]
+                thr = (srt[cnt-1] + srt[cnt])/2.0  # required threshold
+                supp = (np.abs(coef[:,i]) > thr)
+            elif isinstance(self.debias, (int, long)):
+                # keep specified number of atoms
+                srt = np.sort(np.abs(coef[:,i]))[::-1]
+                thr = (srt[self.debias-1] + srt[self.debias])/2.0  # required threshold
+                supp = (np.abs(coef[:,i]) > thr)
+            elif isinstance(self.debias, float):
+                # keep atoms larger than threshold
+                supp = (np.abs(coef[:,i]) > self.debias)
+            elif self.debias != False:
+                raise ValueError("Wrong value for debias paramater")
+
+            if self.debias is not False and np.any(supp):
+                gamma2 = np.zeros_like(coef[:,i])
+                gamma2[supp] = np.dot( np.linalg.pinv(dictionary[:, supp]) , data[:, i])
+                gamma2[~supp] = 0
+                # Rule of thumb check is debiasing went ok: if very different
+                #  from original gamma, debiasing is likely to have gone bad
+                #if np.linalg.norm(coef[:,i] - gamma2) < 2 * np.linalg.norm(coef[:,i]):
+                #    coef[:,i] = gamma2
+                coef[:,i] = gamma2
                 #else:
                 # leave coef[:,i] unchanged
 
         return coef
 
 
-def _iht(dictionary, measurements, sparsity=None, tol=1e-10, maxiter=500, algorithm="accelerated"):
+def _iht(dictionary, measurements, sparsity=None, deltatol=1e-10, errortol=0, maxiter=500, algorithm="accelerated"):
     # x   Observation vector to be decomposed
     #               P   Either:
     #                       1) An nxm matrix (n must be dimension of x)
@@ -383,8 +412,13 @@ def _iht(dictionary, measurements, sparsity=None, tol=1e-10, maxiter=500, algori
 
         # Convergence criterion modified by Kun Qiu
         gap = (np.linalg.norm(s - s_old, 2) ** 2) / m
-        if gap < tol or iter >= maxiter:
+        if gap < deltatol or iter >= maxiter:
             done = 1
+        # Nic:
+        relerror = np.linalg.norm(measurements - np.dot(dictionary, s), 2) / np.linalg.norm(measurements)
+        if relerror < errortol:
+            done = 1
+
 
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         #                    If not done, take another round

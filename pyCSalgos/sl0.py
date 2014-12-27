@@ -13,44 +13,46 @@ class SmoothedL0(SparseSolver):
 
     # All parameters related to the algorithm itself are given here.
     # The data and dictionary are given to the run() method
-    def __init__(self, stopval, algorithm="exact"):
+    def __init__(self, sigma_min, algorithm="exact",
+                 sigma_decrease_factor=0.5,
+                 mu_0=2,
+                 L=3):
 
         # parameter check
-        if stopval <= 0:
+        if sigma_min <= 0:
             raise ValueError("sigmamin is negative or zero")
 
-        self.stopval = stopval
+        self.sigma_min = sigma_min
         self.algorithm = algorithm
+        self.sigma_decrease_factor = sigma_decrease_factor
+        self.mu_0 = mu_0
+        self.L = L
 
     def __str__(self):
-        return "SmoothedL0 ("+str(self.stopval)+", "+str(self.algorithm)+")"
+        return "SmoothedL0 ("+str(self.sigma_min)+", "+str(self.algorithm)+")"
 
 
     def solve(self, data, dictionary, realdict=None):
-        return sl0(data, dictionary, self.stopval, self.algorithm)
 
+        # Force data 2D
+        if len(data.shape) == 1:
+            data = np.atleast_2d(data)
+            if data.shape[0] < data.shape[1]:
+                data = np.transpose(data)
 
-def sl0(data, dictionary, sigmamin=1e-6, algorithm="exact"):
+        N = dictionary.shape[1]
+        Ndata = data.shape[1]
+        coef = np.zeros((N, Ndata))
 
-    if sigmamin <= 0:
-        raise ValueError("sigmamin is negative or zero")
-
-    # Force data 2D
-    if len(data.shape) == 1:
-        data = np.atleast_2d(data)
-        if data.shape[0] < data.shape[1]:
-            data = np.transpose(data)
-
-    N = dictionary.shape[1]
-    Ndata = data.shape[1]
-    coef = np.zeros((N, Ndata))
-
-    if algorithm == "exact":
-        for i in range(Ndata):
-                coef[:, i] = sl0_exact(dictionary, data[:,i], sigmamin)
-    else:
-        raise ValueError("Algorithm '%s' does not exist", algorithm)
-    return coef
+        if self.algorithm == "exact":
+            for i in range(Ndata):
+                coef[:, i] = sl0_exact(dictionary, data[:,i], self.sigma_min,
+                                       sigma_decrease_factor=self.sigma_decrease_factor,
+                                       mu_0=self.mu_0,
+                                       L=self.L)
+        else:
+            raise ValueError("Algorithm '%s' does not exist", self.algorithm)
+        return coef
 
 
 def sl0_exact(A, x, sigma_min, sigma_decrease_factor=0.5, mu_0=2, L=3, A_pinv=None, true_s=None):

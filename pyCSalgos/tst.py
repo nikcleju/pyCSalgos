@@ -12,6 +12,7 @@ import math
 import numpy as np
 
 from base import SparseSolver
+from utils import fast_lstsq
 
 class TwoStageThresholding(SparseSolver):
     """
@@ -49,7 +50,7 @@ def two_stage_thresholding(data, dictionary, stoptol, maxiter, algorithm="recomm
 
     if algorithm == "recommended":
         for i in range(Ndata):
-            coef[:,i] = _tst_recommended(dictionary, data[:,i], maxiter, stoptol)
+            coef[:,i] = _tst_recommended(dictionary, data[:,i], maxiter, tol=stoptol)
     else:
         raise ValueError("Algorithm '%s' does not exist", algorithm)
 
@@ -89,7 +90,9 @@ def _tst_recommended(X, Y, nsweep=300, tol=0.00001, xinitial=None, ro=None):
             a = np.reshape(X[:,np.int_(I)],(X.shape[0],1))
         else:
             a = X[:,np.int_(I)]
-        xt = np.linalg.lstsq(a, Y)[0]
+        #xt = np.linalg.lstsq(a, Y)[0]
+        # Use fast version
+        xt = fast_lstsq(a, Y)
         i_xtsort = np.argsort(np.abs(xt))
 
         J = I[i_xtsort[-k1:]]

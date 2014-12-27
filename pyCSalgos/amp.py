@@ -18,7 +18,7 @@ class ApproximateMessagePassing(SparseSolver):
     Approximate Message Passing
     """
 
-    def __init__(self, stoptol, maxiter=300):
+    def __init__(self, stoptol, maxiter=300, debias=True):
 
         # parameter check
         if stoptol < 0:
@@ -28,13 +28,14 @@ class ApproximateMessagePassing(SparseSolver):
 
         self.stoptol = stoptol
         self.maxiter = maxiter
+        self.debias = debias
 
     def __str__(self):
         return "AMP ("+str(self.stoptol)+" | " + str(self.maxiter) + ")"
 
     def solve(self, data, dictionary, realdict=None):
 
-        # DEBUG:
+        # DEBUG: normalize to avoid convergence problems
         norm = np.linalg.norm(dictionary)
         dictionary = dictionary/norm
         data = data/norm
@@ -52,18 +53,45 @@ class ApproximateMessagePassing(SparseSolver):
         for i in range(Ndata):
             coef[:,i] = _amp(dictionary, data[:,i], tol=self.stoptol, maxiter=self.maxiter)
 
-            # Nic's debias:
-            thr = 1e-6;
-            supp = (np.abs(coef[:,i]) > thr)
-            gamma2 = coef[:,i].copy()
-            gamma2[supp] = np.dot( np.linalg.pinv(dictionary[:,supp]) , data[:,i])
-            gamma2[~supp] = 0
-            # Rule of thumb check is debiasing went ok: if very different
-            #  from original gamma, debiasing is to have gone bad
-            if np.linalg.norm(coef[:,i] - gamma2) < 2 * np.linalg.norm(coef[:,i]):
+            # Debias
+            if self.debias == True:
+                # keep first measurements/2 atoms
+                cnt = int(round(data.shape[0]/2.0)) # how many atoms to keep
+                srt = np.sort(np.abs(coef[:,i]))[::-1]
+                thr = (srt[cnt-1] + srt[cnt])/2.0  # required threshold
+                supp = (np.abs(coef[:,i]) > thr)
+            elif self.debias == "real":
+                cnt = realdict['support'].shape[0]
+                srt = np.sort(np.abs(coef[:,i]))[::-1]
+                thr = (srt[cnt-1] + srt[cnt])/2.0  # required threshold
+                supp = (np.abs(coef[:,i]) > thr)
+            elif self.debias == "all":
+                cnt = data.shape[0]
+                srt = np.sort(np.abs(coef[:,i]))[::-1]
+                thr = (srt[cnt-1] + srt[cnt])/2.0  # required threshold
+                supp = (np.abs(coef[:,i]) > thr)
+            elif isinstance(self.debias, (int, long)):
+                # keep specified number of atoms
+                srt = np.sort(np.abs(coef[:,i]))[::-1]
+                thr = (srt[self.debias-1] + srt[self.debias])/2.0  # required threshold
+                supp = (np.abs(coef[:,i]) > thr)
+            elif isinstance(self.debias, float):
+                # keep atoms larger than threshold
+                supp = (np.abs(coef[:,i]) > self.debias)
+            elif self.debias != False:
+                raise ValueError("Wrong value for debias paramater")
+
+            if self.debias is not False and np.any(supp):
+                gamma2 = np.zeros_like(coef[:,i])
+                gamma2[supp] = np.dot( np.linalg.pinv(dictionary[:, supp]) , data[:, i])
+                gamma2[~supp] = 0
+                # Rule of thumb check is debiasing went ok: if very different
+                #  from original gamma, debiasing is likely to have gone bad
+                #if np.linalg.norm(coef[:,i] - gamma2) < 2 * np.linalg.norm(coef[:,i]):
+                #    coef[:,i] = gamma2
                 coef[:,i] = gamma2
-                #else:
-                # leave coef[:,i] unchanged
+                    #else:
+                    # leave coef[:,i] unchanged
 
         return coef
 

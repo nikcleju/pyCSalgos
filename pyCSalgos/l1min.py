@@ -54,7 +54,9 @@ def _l1min(data, dictionary, stopval, algorithm):
             if stopval == 0:
                 coef[:,i] = l1eq_pd(np.zeros(N), dictionary, dictionary.T, data[:,i])
             elif stopval > 0:
-                coef[:,i] = l1qc_logbarrier(np.zeros(N), dictionary, dictionary.T, data[:,i], stopval, lbtol=0.1*stopval)
+                # convert relative to absolute epsilon
+                epsilon = np.linalg.norm(data[:,i],2) * stopval
+                coef[:,i] = l1qc_logbarrier(np.zeros(N), dictionary, dictionary.T, data[:,i], epsilon, lbtol=0.1*stopval)
             else:
                 raise ValueError("stopping value is negative")
     elif algorithm == "cvxopt":
