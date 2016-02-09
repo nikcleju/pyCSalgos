@@ -106,7 +106,7 @@ def unconstrained_analysis_pursuit(measurements, acqumatrix, operator, lambda1, 
         # Scale with GAP or OMP criterion
         #  alternatively: max(maxval, lambda1*maxval)
         if lambda1 > 1:
-            maxval = lambda1*maxval
+            maxval = (lambda1**2)*maxval  # lamnda1**2 instead of lambda1 in order to match OMP
         # Exit condition
         if maxval < 1e-6:
             break
