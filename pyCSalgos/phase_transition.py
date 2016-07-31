@@ -104,7 +104,7 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         + "Error matrix = " + errstr + "\n"
         + "ERC success matrix = """ + ERCstr + "\n")
 
-    def plot(self, subplot=True, solve=True, check=False, thresh=None, show=True, basename=None, saveexts=[]):
+    def plot(self, subplot=True, solve=True, check=False, thresh=None, show=True, basename=None, saveexts=[], showtitle=False):
         # plt.ion() # Turn interactive off
 
         if solve is False and check is False:
@@ -197,9 +197,15 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
                 else:
                     plt.figure()
                 plot_phase_transition(currentdata, reverse_colormap=reverse_colormap[idatasource])
-                plt.title(datasources_titles[idatasource][icurrentdata])
+                if showtitle:
+                    plt.title(datasources_titles[idatasource][icurrentdata])
                 plt.xlabel(r"$\delta$")
                 plt.ylabel(r"$\rho$")
+                # Show x and y ticks: always 3 ticks: left, middle, right
+                tcks = [0, (self.deltas.size-1)/2, self.deltas.size-1]
+                plt.xticks(tcks, self.deltas[tcks])
+                tcks = [0, (self.rhos.size-1)/2, self.rhos.size-1]
+                plt.yticks(tcks, self.rhos[tcks])
 
                 if not subplot:
                     # separate figure, save each
@@ -276,7 +282,8 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
                 self.err = mdict[u'err'].copy()
             if mdict[u'ERCsuccess'] is not None:
                 self.ERCsuccess = mdict[u'ERCsuccess'].copy()
-            self.simData = mdict[u'simData']
+            if u'simData' in mdict.keys():
+                self.simData = mdict[u'simData']
 
     @classmethod
     def dump(self, filename):
@@ -363,7 +370,7 @@ class SynthesisPhaseTransition(PhaseTransition):
         self.dict_type=dict_type
         self.acqu_type=acqu_type
 
-    def run(self, solve=True, check=False, processes=None):
+    def run(self, solve=True, check=False, processes=None, random_state=None):
 
         # Both can be False: only generates compressed sensing problems data
         #if solve is False and check is False:
@@ -396,7 +403,7 @@ class SynthesisPhaseTransition(PhaseTransition):
                 if not self.simData[idelta][irho]:
                     measurements, acqumatrix, realdata, dictionary, realgamma, realsupport, cleardata = \
                         gen.make_compressed_sensing_problem(
-                            m, self.signaldim, self.dictdim, k, self.numdata, self.snr_db, self.dict_type, self.acqu_type)
+                            m, self.signaldim, self.dictdim, k, self.numdata, self.snr_db, self.dict_type, self.acqu_type, random_state=random_state)
                     self.simData[idelta][irho][u'measurements'] = measurements
                     self.simData[idelta][irho][u'acqumatrix'] = acqumatrix
                     self.simData[idelta][irho][u'realdata'] = realdata
@@ -488,7 +495,7 @@ class AnalysisPhaseTransition(PhaseTransition):
         self.oper_type=oper_type
         self.acqu_type=acqu_type
 
-    def run(self, solve=True, check=False, processes=None):
+    def run(self, solve=True, check=False, processes=None, random_state=None):
 
         # Number of processes
         if processes is None:
@@ -523,21 +530,42 @@ class AnalysisPhaseTransition(PhaseTransition):
         #             self.simData[idelta][irho][u'realcosupport'] = realcosupport
         #             self.simData[idelta][irho][u'cleardata'] = cleardata
 
-        gen_parameters = [(int(round(self.signaldim * delta, 0)), # this is m,  delta = m/n
-                            self.signaldim,
-                            self.dictdim,
-                            self.signaldim - int(round(
-                                int(round(self.signaldim * delta, 0))  # this is m
-                                * rho, 0)), # this is l,  rho = (n-l)/m
-                            self.numdata,
-                            self.snr_db,
-                            self.oper_type,
-                            self.acqu_type,
-                           )
-                           for idelta, delta in enumerate(self.deltas)
-                           for irho, rho in enumerate(self.rhos)
-                           if not self.simData[idelta][irho]
-        ]
+        # When multiprocessing, don't use random_state
+        if processes is not 1:
+            gen_parameters = [(int(round(self.signaldim * delta, 0)), # this is m,  delta = m/n
+                                self.signaldim,
+                                self.dictdim,
+                                self.signaldim - int(round(
+                                    int(round(self.signaldim * delta, 0))  # this is m
+                                    * rho, 0)), # this is l,  rho = (n-l)/m
+                                self.numdata,
+                                self.snr_db,
+                                self.oper_type,
+                                self.acqu_type,
+                                None, # random_state
+                               )
+                               for idelta, delta in enumerate(self.deltas)
+                               for irho, rho in enumerate(self.rhos)
+                               if not self.simData[idelta][irho]
+            ]
+        else:
+            # add random_state to parameters
+            gen_parameters = [(int(round(self.signaldim * delta, 0)), # this is m,  delta = m/n
+                               self.signaldim,
+                               self.dictdim,
+                               self.signaldim - int(round(
+                                   int(round(self.signaldim * delta, 0))  # this is m
+                                   * rho, 0)), # this is l,  rho = (n-l)/m
+                               self.numdata,
+                               self.snr_db,
+                               self.oper_type,
+                               self.acqu_type,
+                               random_state,
+                              )
+                              for idelta, delta in enumerate(self.deltas)
+                              for irho, rho in enumerate(self.rhos)
+                              if not self.simData[idelta][irho]
+            ]
 
         # Run generation tasks
         if processes is not 1:
