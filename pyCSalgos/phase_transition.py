@@ -651,7 +651,7 @@ def run_analysis_delta_rho(tuple_data):
 
 
 # TODO: add many more parameters
-def plot_phase_transition(matrix, transpose=True, reverse_colormap=False):
+def plot_phase_transition(matrix, transpose=True, reverse_colormap=False, xvals=[], yvals=[]):
     # restrict to [0, 1]
     np.clip(matrix, 0, 1, out=matrix)
 
@@ -671,3 +671,7 @@ def plot_phase_transition(matrix, transpose=True, reverse_colormap=False):
     else:
         cmap = cm.gray
     plt.imshow(bigmatrix, cmap=cmap, norm=mcolors.Normalize(0, 1), interpolation='nearest', origin='lower')
+    if xvals:
+        plt.xticks(xvals)
+    if yvals:
+        plt.yticks(yvals)
