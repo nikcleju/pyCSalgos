@@ -33,7 +33,7 @@ class SparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
     arguments (no *args, **kwargs).    
     """
 
-    __metaclass__ = ABCMeta
+    #__metaclass__ = ABCMeta
     
     @abstractmethod
     def solve(self, data, dictionary, realdict=None):
@@ -73,7 +73,7 @@ class AnalysisSparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
     arguments (no *args, **kwargs).
     """
 
-    __metaclass__ = ABCMeta
+    #__metaclass__ = ABCMeta
 
     @abstractmethod
     def solve(self, measurements, acqumatrix, operator, realdict):

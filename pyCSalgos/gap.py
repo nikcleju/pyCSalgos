@@ -13,8 +13,8 @@ import scipy
 import numpy as np
 import scipy.linalg
 
-from base import AnalysisSparseSolver, ERCcheckMixin
-from utils import fast_lstsq
+from .base import AnalysisSparseSolver, ERCcheckMixin
+from .utils import fast_lstsq
 
 
 class GreedyAnalysisPursuit(ERCcheckMixin, AnalysisSparseSolver):
@@ -218,7 +218,7 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
                 break;
             xprev = xhat.copy();
 
-    print 'fidelity_error=',temp
+    print('fidelity_error='+temp)
 
     ##
     # Compute analysis representation for xhat

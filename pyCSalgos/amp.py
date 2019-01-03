@@ -11,7 +11,7 @@ import math
 
 import numpy as np
 
-from base import SparseSolver
+from .base import SparseSolver
 
 class ApproximateMessagePassing(SparseSolver):
     """

@@ -8,7 +8,7 @@ import math
 
 import numpy as np
 
-from base import AnalysisSparseSolver
+from .base import AnalysisSparseSolver
 
 
 class AnalysisL1Min(AnalysisSparseSolver):
@@ -214,7 +214,7 @@ def nesta(A,At,b,muf,delta,opts=None):
             AAtz = np.dot(A, np.dot(A.T,z))
 
         if np.linalg.norm(AAtz - z) / np.linalg.norm(z) > 1e-8:
-            print 'Measurement matrix A must be a partial isometry: AA''=I'
+            print('Measurement matrix A must be a partial isometry: AA''=I')
             raise NestaError('Measurement matrix A must be a partial isometry: AA''=I')
 
     # -- Find a initial guess if not already provided.
@@ -225,7 +225,7 @@ def nesta(A,At,b,muf,delta,opts=None):
             AAtinv = np.dot(Q, np.dot(np.diag(s ** -2), Q.T))
         if AAtinv is not None:
             if delta > 0 and USV is None:
-                print 'delta must be zero for non-projections'
+                print('delta must be zero for non-projections')
                 raise NestaError('delta must be zero for non-projections')
             if hasattr(AAtinv,'__call__'):
                 x_ref = AAtinv(b)
@@ -254,7 +254,7 @@ def nesta(A,At,b,muf,delta,opts=None):
     if TypeMin.lower() == 'l1':
         mu0 = 0.9*max(abs(Ux_ref))
     elif TypeMin.lower() == 'tv':
-        print 'Nic: TODO: not implemented yet'
+        print('Nic: TODO: not implemented yet')
         raise NestaError('Nic: TODO: not implemented yet')
 
     # -- If U was set by the user and normU not supplied, then calcuate norm(U)
@@ -282,7 +282,7 @@ def nesta(A,At,b,muf,delta,opts=None):
             if hasattr(U,'__call__'):
                 normU,cnt = my_normest(U,Ut,xplug.size,1e-3,30)
                 if cnt == 30:
-                    print 'Warning: norm(U) may be inaccurate'
+                    print('Warning: norm(U) may be inaccurate')
             else:
                 mU,nU = U.shape
                 if mU < nU:
@@ -300,7 +300,7 @@ def nesta(A,At,b,muf,delta,opts=None):
                 else:
                     if min(U.shape) > 2000:
                         # norm(randn(2000)) takes about 5 seconds on my PC
-                        print 'Warning: calculation of norm(U) may be slow'
+                        print('Warning: calculation of norm(U) may be slow')
                     normU = math.sqrt( np.linalg.norm(UU, 2) );
         opts['normU'] = normU
 
@@ -317,7 +317,7 @@ def nesta(A,At,b,muf,delta,opts=None):
         opts['TolVar'] = TolVar;
         opts['xplug'] = xplug;
         if Verbose:
-            print '   Beginning', opts['TypeMin'],'Minimization; mu =',mu
+            print('   Beginning'+ opts['TypeMin']+'Minimization; mu ='+mu)
 
         xk,niter_int,res,out,optsOut = Core_Nesterov(A,At,b,mu,delta,opts)
 
@@ -356,11 +356,11 @@ def setOpts(opts,field,default,mn=None,mx=None):
     # perform error checking, if desired
     if mn is not None:
         if var < mn:
-            print 'Variable',field,'is',var,', should be at least',mn
+            print('Variable'+field+'is'+var+', should be at least'+mn)
             raise NestaError('setOpts error: value too small')
     if mx is not None:
         if var > mx:
-            print 'Variable',field,'is',var,', should be at most',mx
+            print('Variable'+field+'is'+var+', should be at most'+mx)
             raise NestaError('setOpts error: value too large')
     opts[field] = var
 
@@ -536,7 +536,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
     opts,normU,userSet = setOpts(opts,'normU',1);
 
     if delta < 0:
-        print 'delta must be greater or equal to zero'
+        print('delta must be greater or equal to zero')
         raise NestaError('delta must be greater or equal to zero')
 
     if hasattr(A,'__call__'):
@@ -601,7 +601,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
 
     #---- TV Minimization
     if TypeMin == 'TV':
-        print 'Nic:TODO: TV minimization not yet implemented!'
+        print('Nic:TODO: TV minimization not yet implemented!')
         raise NestaError('Nic:TODO: TV minimization not yet implemented!')
     #if strcmpi(TypeMin,'TV')
     #    Lmu = 8*Lmu;
@@ -684,7 +684,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
                     lambdaY_old = lambdaY;
                     projection,projIter,lambdaY = fastProjection(Q,S,V,dfp,bp,deltap, .999*lambdaY_old )
                     if lambdaY > 0:
-                        print 'lambda is positive!'
+                        print('lambda is positive!')
                         raise NestaError('lambda is positive!')
                     yk = xk + projection;
                     Ayk = Afun(yk);
@@ -780,7 +780,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
                 else:
                     projection,projIter,lambdaZ = fastProjection(Q,S,V,dfp,bp,deltap, .999*lambdaZ )
                     if lambdaZ > 0:
-                        print 'lambda is positive!'
+                        print('lambda is positive!')
                         raise NestaError('lambda is positive!')
                     zk = projection.copy();
                     #             zk = SLmu1*projection;
@@ -825,14 +825,14 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
 
         #--- display progress if desired
         if Verbose and not np.mod(k+1,Verbose):
-            print 'Iter: ',k+1,'  ~ fmu: ',fx,' ~ Rel. Variation of fmu: ',qp,' ~ Residual:',residuals[k,0]
+            print('Iter: '+(k+1),'  ~ fmu: '+fx+' ~ Rel. Variation of fmu: '+qp+' ~ Residual:'+residuals[k,0])
             #--- if user has supplied a function to calculate the error,
             # apply it to the current iterate and dislay the output:
             if DISPLAY_ERROR:
-                print ' ~ Error:',errFcn(xk)
+                print(' ~ Error:'+errFcn(xk))
 
         if abs(fx)>1e20 or abs(residuals[k,0]) >1e20 or np.isnan(fx):
-            print 'Nesta: possible divergence or NaN.  Bad estimate of ||A''A||?'
+            print('Nesta: possible divergence or NaN.  Bad estimate of ||A''A||?')
             raise NestaError('Nesta: possible divergence or NaN.  Bad estimate of ||A''A||?')
 
 
@@ -971,7 +971,7 @@ def fastProjection( U, S, V, y, b, epsilon, lambda0=0, DISP=False ):
         #     fpl = fp(l);  # this is a little slower
         d = -ff/fpl;
         if DISP:
-            print k,', lambda is ',l,', f(lambda) is ',ff,', f''(lambda) is',fpl
+            print(k+', lambda is '+l+', f(lambda) is '+ff+', f''(lambda) is'+fpl)
         if abs(ff) < TOL:
             break
         l_old = l
@@ -981,7 +981,7 @@ def fastProjection( U, S, V, y, b, epsilon, lambda0=0, DISP=False ):
             #         oldff = f(0);
             oldff = b2.sum(); oldff = oldff - epsilon2;
             if DISP:
-                print 'restarting'
+                print('restarting')
         else:
             if alpha < 1:
                 alpha = (alpha+1.0)/2.0
@@ -994,7 +994,7 @@ def fastProjection( U, S, V, y, b, epsilon, lambda0=0, DISP=False ):
                 #end
         if l_old == l and l == 0:
             if DISP:
-                print 'Making no progress; x = y is probably feasible'
+                print('Making no progress; x = y is probably feasible')
             break;
 
     # if k == MAXIT && DEBUG, disp('maxed out iterations'); end

@@ -12,7 +12,7 @@ from sklearn.utils import check_random_state
 try:
     import sklearn.datasets
     has_sklearn_datasets = True
-except ImportError, e:
+except ImportError as e:
     # module doesn't exist
     has_sklearn_datasets = False
 

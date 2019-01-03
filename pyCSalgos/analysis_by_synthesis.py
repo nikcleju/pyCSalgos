@@ -6,7 +6,7 @@ Perform analysis-based recovery based on synthesis recovery
 
 import numpy as np
 
-from base import AnalysisSparseSolver, SparseSolver
+from .base import AnalysisSparseSolver, SparseSolver
 
 
 class AnalysisBySynthesis(AnalysisSparseSolver):

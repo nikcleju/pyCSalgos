@@ -6,7 +6,7 @@ Provides the Smoothed-L0 (SL0) algorithm
 
 import numpy as np
 
-from base import SparseSolver
+from .base import SparseSolver
 
 
 class SmoothedL0(SparseSolver):
@@ -82,7 +82,7 @@ def sl0_exact(A, x, sigma_min, sigma_decrease_factor=0.5, mu_0=2, L=3, A_pinv=No
 
         if ShowProgress:
             string = '     sigma=%f, SNR=%f\n' % sigma, _estimate_SNR(s,true_s)
-            print string
+            print(string)
 
         sigma = sigma * sigma_decrease_factor
 

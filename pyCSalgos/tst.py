@@ -11,8 +11,8 @@ import math
 
 import numpy as np
 
-from base import SparseSolver
-from utils import fast_lstsq
+from .base import SparseSolver
+from .utils import fast_lstsq
 
 class TwoStageThresholding(SparseSolver):
     """

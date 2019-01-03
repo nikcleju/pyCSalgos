@@ -18,10 +18,10 @@ import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import datetime
 import hdf5storage
-import cPickle
+import pickle as cPickle   # Python3 has no cPickle
 import multiprocessing
 
-import generate as gen
+from . import generate as gen
 
 
 class PhaseTransition(with_metaclass(ABCMeta, object)):
@@ -127,7 +127,10 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
                 else:
                     basename = basename + [strdatetime + "_erc_" + str(i) for i in range(len(self.ERCsolvers))]
         # if a string, convert to a list
-        if isinstance(basename, types.StringTypes):
+        #if isinstance(basename, types.StringTypes):
+        # Python3: use isinstance(s, str)
+        if isinstance(basename, str):
+
             basename = [basename]
         iterFilename = iter(basename)
 
@@ -202,9 +205,9 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
                 plt.xlabel(r"$\delta$")
                 plt.ylabel(r"$\rho$")
                 # Show x and y ticks: always 3 ticks: left, middle, right
-                tcks = [0, (self.deltas.size-1)/2, self.deltas.size-1]
+                tcks = [0, round((self.deltas.size-1)/2), self.deltas.size-1]
                 plt.xticks(tcks, self.deltas[tcks])
-                tcks = [0, (self.rhos.size-1)/2, self.rhos.size-1]
+                tcks = [0, round((self.rhos.size-1)/2), self.rhos.size-1]
                 plt.yticks(tcks, self.rhos[tcks])
 
                 if not subplot:
@@ -431,9 +434,14 @@ class SynthesisPhaseTransition(PhaseTransition):
                                for idelta in range(len(self.deltas)) for irho in range(len(self.rhos))
                                ]
 
-            # Run in parallel
-            pool = multiprocessing.Pool(processes=processes)
-            results = pool.map(run_synthesis_delta_rho, task_parameters)
+            # Run tasks, possibly in parallel
+            if processes is not 1:
+                if pool is None:
+                    pool = multiprocessing.Pool(processes=processes)
+                results = pool.map(run_synthesis_delta_rho, task_parameters)
+            else:
+                results = map(run_synthesis_delta_rho, task_parameters)
+
 
             # Process results
             result_iter = iter(results)
@@ -607,9 +615,9 @@ class AnalysisPhaseTransition(PhaseTransition):
                                for idelta in range(len(self.deltas)) for irho in range(len(self.rhos))
             ]
 
-            print "Starting solver processes:"
+            print("Starting solver processes:")
             time_start = datetime.datetime.now()
-            print time_start.strftime("%Y-%m-%d --- %H:%M:%S:%f")
+            print(time_start.strftime("%Y-%m-%d --- %H:%M:%S:%f"))
 
             # Run run tasks
             if processes is not 1:
@@ -630,8 +638,8 @@ class AnalysisPhaseTransition(PhaseTransition):
                         self.ERCsuccess[:,idelta,irho,:] = result[1]
 
             time_end = datetime.datetime.now()
-            print "End time: " + time_end.strftime("%Y-%m-%d --- %H:%M:%S:%f")
-            print "Elapsed: " + str((time_end - time_start).seconds) + " seconds"
+            print("End time: " + time_end.strftime("%Y-%m-%d --- %H:%M:%S:%f"))
+            print("Elapsed: " + str((time_end - time_start).seconds) + " seconds")
 
 
 # this can be avoided in python 3.3

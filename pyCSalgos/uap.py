@@ -11,8 +11,8 @@ import math
 import scipy
 import numpy as np
 
-from base import AnalysisSparseSolver
-from utils import fast_lstsq
+from .base import AnalysisSparseSolver
+from .utils import fast_lstsq
 
 
 class UnconstrainedAnalysisPursuit(AnalysisSparseSolver):
