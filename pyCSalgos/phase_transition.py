@@ -16,6 +16,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
+from matplotlib.ticker import FormatStrFormatter
+
 import datetime
 import hdf5storage
 import pickle as cPickle   # Python3 has no cPickle
@@ -206,9 +208,9 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
                 plt.ylabel(r"$\rho$")
                 # Show x and y ticks: always 3 ticks: left, middle, right
                 tcks = [0, round((self.deltas.size-1)/2), self.deltas.size-1]
-                plt.xticks(tcks, self.deltas[tcks])
+                plt.xticks(tcks, ["%.2f"%(val) for val in self.deltas[tcks]])
                 tcks = [0, round((self.rhos.size-1)/2), self.rhos.size-1]
-                plt.yticks(tcks, self.rhos[tcks])
+                plt.yticks(tcks, ["%.2f"%(val) for val in self.rhos[tcks]])
 
                 if not subplot:
                     # separate figure, save each
@@ -436,8 +438,8 @@ class SynthesisPhaseTransition(PhaseTransition):
 
             # Run tasks, possibly in parallel
             if processes is not 1:
-                if pool is None:
-                    pool = multiprocessing.Pool(processes=processes)
+                #if pool is None:
+                pool = multiprocessing.Pool(processes=processes)
                 results = pool.map(run_synthesis_delta_rho, task_parameters)
             else:
                 results = map(run_synthesis_delta_rho, task_parameters)
