@@ -262,6 +262,17 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         with open(basename+".txt", "w") as f:
             f.write(self.get_description())
 
+    def savedescription(self, basename=None):
+        """
+        Saves description to a text file
+        :return:
+        """
+        if basename is None:
+            basename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")
+
+        with open(basename+".txt", "w") as f:
+            f.write(self.get_description())
+
     def loaddata(self, matfilename=None, picklefilename=None):
         """
         Loads data from saved files. If matfilename is not None, all numerical data is read from ithe file (but not
