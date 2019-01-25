@@ -6,10 +6,11 @@ Provides Iterative Hard Thresholding (Accelerated IHT)
 
 # Author: Nicolae Cleju
 # License: BSD 3 clause
-
+#
 import math
 
 import numpy as np
+import scipy
 
 from .base import SparseSolver
 
@@ -21,7 +22,7 @@ class IterativeHardThresholding(SparseSolver):
     Iterative Hard Thresholding
     """
 
-    def __init__(self, stoptol, deltatol=1e-10, sparsity="half", maxiter=70000, debias=True):
+    def __init__(self, mu, stoptol, deltatol=1e-10, sparsity="half", maxiter=70000, debias=True):
 
         # parameter check
         if stoptol < 0:
@@ -29,6 +30,7 @@ class IterativeHardThresholding(SparseSolver):
         if maxiter <= 0:
             raise ValueError("number of iterations is not positive")
 
+        self.mu = mu
         self.stoptol = stoptol
         self.deltatol = deltatol
         self.maxiter = maxiter
@@ -36,7 +38,7 @@ class IterativeHardThresholding(SparseSolver):
         self.debias = debias
 
     def __str__(self):
-        return "IHT (" + str(self.stoptol) + " | " + str(self.maxiter) + " | " +  str(self.sparsity) + ")"
+        return "IHT (" + str(self.mu) + "," + str(self.stoptol) + " | " + str(self.maxiter) + " | " +  str(self.sparsity) + ")"
 
     def solve(self, data_orig, dictionary_orig, realdict=None):
 
@@ -75,7 +77,7 @@ class IterativeHardThresholding(SparseSolver):
             else:
                 M = self.sparsity  #TODO check type
 
-            coef[:, i] = _iht(dictionary, data[:, i], sparsity=M, errortol=self.stoptol, deltatol=self.deltatol, maxiter=self.maxiter)
+            coef[:, i] = _iht(dictionary, data[:, i], sparsity=M, mu=self.mu, errortol=self.stoptol, deltatol=self.deltatol, maxiter=self.maxiter)
 
             # Debias
             if self.debias == True:
@@ -107,8 +109,9 @@ class IterativeHardThresholding(SparseSolver):
 
             if self.debias is not False and np.any(supp):
                 gamma2 = np.zeros_like(coef[:,i])
-                gamma2[supp] = np.dot( np.linalg.pinv(dictionary[:, supp]) , data[:, i])
-                gamma2[~supp] = 0
+                #gamma2[supp] = np.dot( np.linalg.pinv(dictionary[:, supp]) , data[:, i])
+                #gamma2[~supp] = 0
+                gamma2[supp] = scipy.linalg.lstsq(dictionary[:,supp], data[:, i])[0]
                 # Rule of thumb check is debiasing went ok: if very different
                 #  from original gamma, debiasing is likely to have gone bad
                 #if np.linalg.norm(coef[:,i] - gamma2) < 2 * np.linalg.norm(coef[:,i]):
@@ -120,7 +123,7 @@ class IterativeHardThresholding(SparseSolver):
         return coef
 
 
-def _iht(dictionary, measurements, sparsity=None, deltatol=1e-10, errortol=0, maxiter=500, algorithm="accelerated"):
+def _iht(dictionary, measurements, sparsity=None, mu=0, deltatol=1e-10, errortol=0, maxiter=500, algorithm="accelerated"):
     # x   Observation vector to be decomposed
     #               P   Either:
     #                       1) An nxm matrix (n must be dimension of x)
@@ -149,7 +152,8 @@ def _iht(dictionary, measurements, sparsity=None, deltatol=1e-10, errortol=0, ma
     err_mse = []
     iter_time = []
     s_initial = np.zeros(m)
-    MU = 0
+    #MU = 0
+    MU = mu  # use the 'mu' value received as rgument
     acceleration = -1 #DEBUG: disabled (disable=-1)
 
     Count = 0
@@ -170,9 +174,9 @@ def _iht(dictionary, measurements, sparsity=None, deltatol=1e-10, errortol=0, ma
     oldERR = sigsize
 
 
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #                 Random Check to see if dictionary norm is below 1
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     x_test = np.random.randn(m)
     x_test = x_test / np.linalg.norm(x_test, 2)
@@ -182,9 +186,9 @@ def _iht(dictionary, measurements, sparsity=None, deltatol=1e-10, errortol=0, ma
         warnings.warn('Use smaller step-size or || P ||_2 < 1.', RuntimeWarning)
 
 
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #                        Main algorithm
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     t = 0
     done = 0
     iter = 1
@@ -406,9 +410,9 @@ def _iht(dictionary, measurements, sparsity=None, deltatol=1e-10, errortol=0, ma
 
         ERR = np.dot(Residual.T, Residual) / n
 
-        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        ##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         #                        Are we done yet?
-        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        ##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         # Convergence criterion modified by Kun Qiu
         gap = (np.linalg.norm(s - s_old, 2) ** 2) / m
@@ -420,9 +424,9 @@ def _iht(dictionary, measurements, sparsity=None, deltatol=1e-10, errortol=0, ma
             done = 1
 
 
-        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        ##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         #                    If not done, take another round
-        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        ##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if not done:
             iter = iter + 1
             oldERR = ERR
