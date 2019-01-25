@@ -251,7 +251,7 @@ def l1eq_pd(x0, A, At, b, pdtol=1e-3, pdmaxiter=50, cgtol=1e-8, cgmaxiter=200, v
       if numpy.linalg.norm(numpy.dot(A,x0)-b) / numpy.linalg.norm(b) > cgtol:
         #disp('Starting point infeasible; using x0 = At*inv(AAt)*y.');
         if verbose:
-          print 'Starting point infeasible; using x0 = At*inv(AAt)*y.'
+          print('Starting point infeasible; using x0 = At*inv(AAt)*y.')
         #opts.POSDEF = true; opts.SYM = true;
         #[w, hcond] = linsolve(A*A', b, opts);
         #if (hcond < 1e-14)
@@ -265,12 +265,12 @@ def l1eq_pd(x0, A, At, b, pdtol=1e-3, pdmaxiter=50, cgtol=1e-8, cgmaxiter=200, v
             hcond = 1.0/numpy.linalg.cond(numpy.dot(A,A.T))
         except scipy.linalg.LinAlgError:
             if verbose:
-              print 'A*At is ill-conditioned: cannot find starting point'
+              print('A*At is ill-conditioned: cannot find starting point')
             xp = x0.copy()
             return xp
         if hcond < 1e-14:
             if verbose:
-              print 'A*At is ill-conditioned: cannot find starting point'
+              print('A*At is ill-conditioned: cannot find starting point')
             xp = x0.copy()
             return xp           
         x0 = numpy.dot(A.T, w)
@@ -354,12 +354,12 @@ def l1eq_pd(x0, A, At, b, pdtol=1e-3, pdmaxiter=50, cgtol=1e-8, cgmaxiter=200, v
           hcond = 1.0/numpy.linalg.cond(H11p)
         except scipy.linalg.LinAlgError:
             if verbose:
-              print 'Matrix ill-conditioned.  Returning previous iterate.  (See Section 4 of notes for more information.)'
+              print('Matrix ill-conditioned.  Returning previous iterate.  (See Section 4 of notes for more information.)')
             xp = x.copy()
             return xp
         if hcond < 1e-14:
             if verbose:
-              print 'Matrix ill-conditioned.  Returning previous iterate.  (See Section 4 of notes for more information.)'
+              print('Matrix ill-conditioned.  Returning previous iterate.  (See Section 4 of notes for more information.)')
             xp = x.copy()
             return xp            
         #if (hcond < 1e-14)
@@ -424,7 +424,7 @@ def l1eq_pd(x0, A, At, b, pdtol=1e-3, pdmaxiter=50, cgtol=1e-8, cgmaxiter=200, v
         backiter = backiter + 1
         if (backiter > 32):
           if verbose:
-            print 'Stuck backtracking, returning last iterate.  (See Section 4 of notes for more information.)'
+            print('Stuck backtracking, returning last iterate.  (See Section 4 of notes for more information.)')
           xp = x.copy()
           return xp
         #end
@@ -461,14 +461,14 @@ def l1eq_pd(x0, A, At, b, pdtol=1e-3, pdmaxiter=50, cgtol=1e-8, cgmaxiter=200, v
       done = (sdg < pdtol) or (pditer >= pdmaxiter)
       
       if verbose:
-        print 'Iteration =',pditer,', tau =',tau,', Primal =',numpy.sum(u),', PDGap =',sdg,', Dual res =',numpy.linalg.norm(rdual),', Primal res =',numpy.linalg.norm(rpri)
+        print('Iteration =',pditer,', tau =',tau,', Primal =',numpy.sum(u),', PDGap =',sdg,', Dual res =',numpy.linalg.norm(rdual),', Primal res =',numpy.linalg.norm(rpri))
       if largescale:
         #disp(sprintf('                  CG Res = #8.3e, CG Iter = #d', cgres, cgiter));
         raise l1eqNotImplementedError('Largescale not implemented yet!')
       else:
         #disp(sprintf('                  H11p condition number = #8.3e', hcond));
         if verbose:
-          print '                  H11p condition number =',hcond
+          print('                  H11p condition number =',hcond)
       #end
       
     #end

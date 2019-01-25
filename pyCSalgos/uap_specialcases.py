@@ -7,14 +7,14 @@ Provides dedicated implementations of UAP particular limit cases.
 # Author: Nicolae Cleju
 # License: BSD 3 clause
 
-from base import SparseSolver
+from .base import SparseSolver
 
 import time
 import math
 import numpy as np
 import scipy
 
-from omp import OrthogonalMatchingPursuit
+from .omp import OrthogonalMatchingPursuit
 
 class UAP_OMPA_dictfirst(SparseSolver):
     """
@@ -153,7 +153,7 @@ def omp_sparsify_greed_omp_qr(x,A,m,opts=[]):
     # Nic: translated to Python on 19.10.2011. Original Matlab Code by Thomas Blumensath
 
     if x.ndim != 1:
-        print 'x must be a vector.'
+        print('x must be a vector.')
         return
     n = x.size
 
@@ -168,7 +168,7 @@ def omp_sparsify_greed_omp_qr(x,A,m,opts=[]):
     s_initial   = np.zeros(m);
 
     if verbose:
-        print 'Initialising...'
+        print('Initialising...')
     #end
 
     ###########################################################################
@@ -185,10 +185,10 @@ def omp_sparsify_greed_omp_qr(x,A,m,opts=[]):
             comp_err  = False
             comp_time = False
         elif opts['nargout'] == 0:
-            print 'Please assign output variable.'
+            print('Please assign output variable.')
             return
         else:
-            print 'Too many output arguments specified'
+            print('Too many output arguments specified')
             return
     else:
         # If not given, make default nargout = 3
@@ -263,12 +263,12 @@ def omp_sparsify_greed_omp_qr(x,A,m,opts=[]):
     try:
         Q = np.zeros((n,maxM))
     except:
-        print 'Variable size is too large. Please try greed_omp_chol algorithm or reduce MAXITER.'
+        print('Variable size is too large. Please try greed_omp_chol algorithm or reduce MAXITER.')
         raise
     try:
         R = np.zeros((maxM, maxM))
     except:
-        print 'Variable size is too large. Please try greed_omp_chol algorithm or reduce MAXITER.'
+        print('Variable size is too large. Please try greed_omp_chol algorithm or reduce MAXITER.')
         raise
 
     ###########################################################################
@@ -332,7 +332,7 @@ def omp_sparsify_greed_omp_qr(x,A,m,opts=[]):
     #                        Main algorithm
     ###########################################################################
     if verbose:
-        print 'Main iterations...'
+        print('Main iterations...')
     tic = time.time()
     t = 0
     DR = Pt(Residual)
@@ -391,39 +391,39 @@ def omp_sparsify_greed_omp_qr(x,A,m,opts=[]):
             if iter >= STOPTOL:
                 done = 1
             elif verbose and time.time() - t > 10.0/1000: # time() returns sec
-                print 'Iteration '+iter+'. --- '+(STOPTOL-iter)+' iterations to go'
+                print('Iteration '+iter+'. --- '+(STOPTOL-iter)+' iterations to go')
                 t = time.time()
         elif STOPCRIT =='mse':
             if comp_err:
                 if err_mse[iter-1] < STOPTOL:
                     done = 1
                 elif verbose and time.time() - t > 10.0/1000: # time() returns sec
-                    print 'Iteration '+iter+'. --- '+err_mse[iter-1]+' mse'
+                    print('Iteration '+iter+'. --- '+err_mse[iter-1]+' mse')
                     t = time.time()
             else:
                 if ERR < STOPTOL:
                     done = 1
                 elif verbose and time.time() - t > 10.0/1000: # time() returns sec
-                    print 'Iteration '+iter+'. --- '+ERR+' mse'
+                    print('Iteration '+iter+'. --- '+ERR+' mse')
                     t = time.time()
         elif STOPCRIT == 'mse_change' and iter >=2:
             if comp_err and iter >=2:
                 if ((err_mse[iter-2] - err_mse[iter-1])/sigsize < STOPTOL):
                     done = 1
                 elif verbose and time.time() - t > 10.0/1000: # time() returns sec
-                    print 'Iteration '+iter+'. --- '+((err_mse[iter-2]-err_mse[iter-1])/sigsize)+' mse change'
+                    print('Iteration '+iter+'. --- '+((err_mse[iter-2]-err_mse[iter-1])/sigsize)+' mse change')
                     t = time.time()
             else:
                 if ((oldERR - ERR)/sigsize < STOPTOL):
                     done = 1
                 elif verbose and time.time() - t > 10.0/1000: # time() returns sec
-                    print 'Iteration '+iter+'. --- '+((oldERR - ERR)/sigsize)+' mse change'
+                    print('Iteration '+iter+'. --- '+((oldERR - ERR)/sigsize)+' mse change')
                     t = time.time()
         elif STOPCRIT == 'corr':
             if np.abs(DR).max() < STOPTOL:
                 done = 1
             elif verbose and time.time() - t > 10.0/1000: # time() returns sec
-                print 'Iteration '+iter+'. --- '+(np.abs(DR).max())+' corr'
+                print('Iteration '+iter+'. --- '+(np.abs(DR).max())+' corr')
                 t = time.time()
 
         # Also stop if residual gets too small or maxIter reached
@@ -431,18 +431,18 @@ def omp_sparsify_greed_omp_qr(x,A,m,opts=[]):
             if err_mse[iter-1] < 1e-14:
                 done = 1
                 if verbose:
-                    print 'Stopping. Exact signal representation found!'
+                    print('Stopping. Exact signal representation found!')
         else:
             if iter > 1:
                 if ERR < 1e-14:
                     done = 1
                     if verbose:
-                        print 'Stopping. Exact signal representation found!'
+                        print('Stopping. Exact signal representation found!')
 
         if iter >= MAXITER:
             done = 1
             if verbose:
-                print 'Stopping. Maximum number of iterations reached!'
+                print('Stopping. Maximum number of iterations reached!')
 
         ###########################################################################
         #                    If not done, take another round
@@ -467,7 +467,7 @@ def omp_sparsify_greed_omp_qr(x,A,m,opts=[]):
     if opts['nargout'] == 3:
         iter_time = iter_time[0:iter-1]
     if verbose:
-        print 'Done'
+        print('Done')
 
     # Return
     if opts['nargout'] == 1:

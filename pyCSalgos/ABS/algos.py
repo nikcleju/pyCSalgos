@@ -17,11 +17,11 @@ import pyCSalgos
 import pyCSalgos.GAP.GAP
 
 # Analysis by Synthesis - exact algorithms
-import ABSexact
+from . import ABSexact
 # Analysis by Synthesis - mixed algorithms
-import ABSmixed
+from . import ABSmixed
 # Analysis by Synthesis - lambda algorithms
-import ABSlambda
+from . import ABSlambda
 
 
 ###---------------------------------

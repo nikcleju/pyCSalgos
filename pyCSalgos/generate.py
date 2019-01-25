@@ -12,7 +12,7 @@ from sklearn.utils import check_random_state
 try:
     import sklearn.datasets
     has_sklearn_datasets = True
-except ImportError, e:
+except ImportError as e:
     # module doesn't exist
     has_sklearn_datasets = False
 
@@ -291,7 +291,7 @@ def make_cosparse_coded_signal(signal_size, operator_size, cosparsity, num_data,
 
         data[:,i] = numpy.squeeze(numpy.dot(nullspace, rng.randn(signal_size-cosparsity,1)))
 
-        nonzerosupport = numpy.setdiff1d(range(operator_size), cosupport[:,i],True)
+        nonzerosupport = numpy.setdiff1d(list(range(operator_size)), cosupport[:,i],True)
         bNonZerosupport[nonzerosupport,i] = True
 
     #gamma[nonzerosupport, i] = numpy.dot(operator[nonzerosupport,:], data[:,i])

@@ -112,7 +112,7 @@ def test_deprecated():
         # Trigger a warning.
         d = DeprecatedAttributeSolver(a=1,b=2)
         d.solve()
-        print len(w)
+        print(len(w))
         # Verify some things
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
@@ -123,7 +123,7 @@ def test_deprecated():
         warnings.simplefilter("always")
         # Trigger a warning.
         x=d.b
-        print len(w)
+        print(len(w))
         # Verify some things
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)

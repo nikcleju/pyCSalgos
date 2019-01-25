@@ -11,7 +11,7 @@ import math
 
 import numpy as np
 
-from base import SparseSolver
+from .base import SparseSolver
 
 import warnings
 
@@ -94,7 +94,7 @@ class IterativeHardThresholding(SparseSolver):
                 srt = np.sort(np.abs(coef[:,i]))[::-1]
                 thr = (srt[cnt-1] + srt[cnt])/2.0  # required threshold
                 supp = (np.abs(coef[:,i]) > thr)
-            elif isinstance(self.debias, (int, long)):
+            elif isinstance(self.debias, int):
                 # keep specified number of atoms
                 srt = np.sort(np.abs(coef[:,i]))[::-1]
                 thr = (srt[self.debias-1] + srt[self.debias])/2.0  # required threshold
@@ -205,7 +205,7 @@ def _iht(dictionary, measurements, sparsity=None, deltatol=1e-10, errortol=0, ma
             s_old = s.copy()
 
             #IND                 =   s~=0
-            IND = (s <> 0)
+            IND = (s != 0)
             d = Pt(Residual)
             # If the current vector is zero, we take the largest elements in d
             if np.sum(IND) == 0:
@@ -292,7 +292,7 @@ def _iht(dictionary, measurements, sparsity=None, deltatol=1e-10, errortol=0, ma
 
             # As long as the support changes and mu > omega, we decrease mu
             #while mu >= 1.5*omega && sum(xor(IND,s~=0))~=0 && sum(IND)~=0
-            while (mu >= 1.5 * omega) and (np.sum(np.logical_xor(IND, (s <> 0))) is not 0) and (np.sum(IND) is not 0):
+            while (mu >= 1.5 * omega) and (np.sum(np.logical_xor(IND, (s != 0))) is not 0) and (np.sum(IND) is not 0):
                 #display(['decreasing mu'])
 
                 # We use a simple line search, halving mu in each step

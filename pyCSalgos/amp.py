@@ -11,7 +11,7 @@ import math
 
 import numpy as np
 
-from base import SparseSolver
+from .base import SparseSolver
 
 class ApproximateMessagePassing(SparseSolver):
     """
@@ -70,7 +70,7 @@ class ApproximateMessagePassing(SparseSolver):
                 srt = np.sort(np.abs(coef[:,i]))[::-1]
                 thr = (srt[cnt-1] + srt[cnt])/2.0  # required threshold
                 supp = (np.abs(coef[:,i]) > thr)
-            elif isinstance(self.debias, (int, long)):
+            elif isinstance(self.debias, int):
                 # keep specified number of atoms
                 srt = np.sort(np.abs(coef[:,i]))[::-1]
                 thr = (srt[self.debias-1] + srt[self.debias])/2.0  # required threshold

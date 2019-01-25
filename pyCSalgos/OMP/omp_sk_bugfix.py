@@ -65,7 +65,7 @@ vector
     alpha = np.dot(X.T, y)
     residual = y
     n_active = 0
-    indices = range(X.shape[1]) # keeping track of swapping
+    indices = list(range(X.shape[1])) # keeping track of swapping
 
     #max_features = X.shape[1] if tol is not None else n_nonzero_coefs
     # Nic: tol not None should not overide n_nonzero_coefs, but act together
@@ -159,7 +159,7 @@ vector
     nrm2, swap = linalg.get_blas_funcs(('nrm2', 'swap'), (Gram,))
     potrs, = get_lapack_funcs(('potrs',), (Gram,))
 
-    indices = range(len(Gram)) # keeping track of swapping
+    indices = list(range(len(Gram))) # keeping track of swapping
     alpha = Xy
     tol_curr = tol_0
     delta = 0
@@ -272,7 +272,7 @@ Matching Pursuit Technical Report - CS Technion, April 2008.
 http://www.cs.technion.ac.il/~ronrubin/Publications/KSVX-OMP-v2.pdf
 
 """
-    X, y = map(np.asanyarray, (X, y))
+    X, y = list(map(np.asanyarray, (X, y)))
     if y.ndim == 1:
         y = y[:, np.newaxis]
     if copy_X:
@@ -305,7 +305,7 @@ of features")
                                   copy_Gram=copy_X, copy_Xy=False)
 
     coef = np.zeros((X.shape[1], y.shape[1]))
-    for k in xrange(y.shape[1]):
+    for k in range(y.shape[1]):
         x, idx = _cholesky_omp(X, y[:, k], n_nonzero_coefs, tol,
                                copy_X=copy_X)
         coef[idx, k] = x
@@ -373,7 +373,7 @@ Matching Pursuit Technical Report - CS Technion, April 2008.
 http://www.cs.technion.ac.il/~ronrubin/Publications/KSVX-OMP-v2.pdf
 
 """
-    Gram, Xy = map(np.asanyarray, (Gram, Xy))
+    Gram, Xy = list(map(np.asanyarray, (Gram, Xy)))
     if Xy.ndim == 1:
         Xy = Xy[:, np.newaxis]
         if tol is not None:

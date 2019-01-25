@@ -11,8 +11,8 @@ import math
 import scipy
 import numpy as np
 
-from base import AnalysisSparseSolver
-from utils import fast_lstsq
+from .base import AnalysisSparseSolver
+from .utils import fast_lstsq
 
 
 class UnconstrainedAnalysisPursuit(AnalysisSparseSolver):
@@ -90,7 +90,7 @@ def unconstrained_analysis_pursuit(measurements, acqumatrix, operator, lambda1, 
 
         # Minimization problem
         I_Lambda_k = np.zeros((Lambdahat.size, gammasize))
-        I_Lambda_k[range(Lambdahat.size), Lambdahat] = 1
+        I_Lambda_k[list(range(Lambdahat.size)), Lambdahat] = 1
         system_matrix = np.concatenate((np.dot(acqumatrix, OmegaPinv), lambda1 * I_Lambda_k))
         system_matrix = np.concatenate((system_matrix, lambda2 * P))
         y_tilde = np.concatenate((measurements, np.zeros(I_Lambda_k.shape[0] + P.shape[0])))

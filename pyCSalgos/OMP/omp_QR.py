@@ -108,7 +108,7 @@ def greed_omp_qr(x,A,m,opts=[]):
     #   return
     #end
     if x.ndim != 1:
-      print 'x must be a vector.'
+      print('x must be a vector.')
       return
     n = x.size
         
@@ -124,7 +124,7 @@ def greed_omp_qr(x,A,m,opts=[]):
     s_initial   = np.zeros(m);
     
     if verbose:
-       print 'Initialising...'
+       print('Initialising...')
     #end
     
     ###########################################################################
@@ -156,10 +156,10 @@ def greed_omp_qr(x,A,m,opts=[]):
         comp_err  = False
         comp_time = False
       elif opts['nargout'] == 0:
-        print 'Please assign output variable.'
+        print('Please assign output variable.')
         return
       else:
-        print 'Too many output arguments specified'
+        print('Too many output arguments specified')
         return
     else:
         # If not given, make default nargout = 3
@@ -318,12 +318,12 @@ def greed_omp_qr(x,A,m,opts=[]):
     try:
         Q = np.zeros((n,maxM))
     except:
-        print 'Variable size is too large. Please try greed_omp_chol algorithm or reduce MAXITER.'
+        print('Variable size is too large. Please try greed_omp_chol algorithm or reduce MAXITER.')
         raise
     try:
         R = np.zeros((maxM, maxM))
     except:
-        print 'Variable size is too large. Please try greed_omp_chol algorithm or reduce MAXITER.'
+        print('Variable size is too large. Please try greed_omp_chol algorithm or reduce MAXITER.')
         raise
         
     ###########################################################################
@@ -454,7 +454,7 @@ def greed_omp_qr(x,A,m,opts=[]):
     #    done = 0;
     #    iter=1;
     if verbose:
-       print 'Main iterations...'
+       print('Main iterations...')
     tic = time.time()
     t = 0
     DR = Pt(Residual)
@@ -650,7 +650,7 @@ def greed_omp_qr(x,A,m,opts=[]):
                  done = 1
              elif verbose and time.time() - t > 10.0/1000: # time() returns sec
                 #display(sprintf('Iteration #i. --- #i iterations to go',iter ,STOPTOL-iter)) 
-                print 'Iteration '+iter+'. --- '+(STOPTOL-iter)+' iterations to go'
+                print('Iteration '+iter+'. --- '+(STOPTOL-iter)+' iterations to go')
                 t = time.time()
              #end
          elif STOPCRIT =='mse':
@@ -659,7 +659,7 @@ def greed_omp_qr(x,A,m,opts=[]):
                     done = 1 
                 elif verbose and time.time() - t > 10.0/1000: # time() returns sec
                     #display(sprintf('Iteration #i. --- #i mse',iter ,err_mse(iter))) 
-                    print 'Iteration '+iter+'. --- '+err_mse[iter-1]+' mse'
+                    print('Iteration '+iter+'. --- '+err_mse[iter-1]+' mse')
                     t = time.time()
                 #end
              else:
@@ -667,7 +667,7 @@ def greed_omp_qr(x,A,m,opts=[]):
                     done = 1 
                  elif verbose and time.time() - t > 10.0/1000: # time() returns sec
                     #display(sprintf('Iteration #i. --- #i mse',iter ,ERR)) 
-                    print 'Iteration '+iter+'. --- '+ERR+' mse'
+                    print('Iteration '+iter+'. --- '+ERR+' mse')
                     t = time.time()
                  #end
              #end
@@ -677,7 +677,7 @@ def greed_omp_qr(x,A,m,opts=[]):
                     done = 1
                  elif verbose and time.time() - t > 10.0/1000: # time() returns sec
                     #display(sprintf('Iteration #i. --- #i mse change',iter ,(err_mse(iter-1)-err_mse(iter))/sigsize )) 
-                    print 'Iteration '+iter+'. --- '+((err_mse[iter-2]-err_mse[iter-1])/sigsize)+' mse change'
+                    print('Iteration '+iter+'. --- '+((err_mse[iter-2]-err_mse[iter-1])/sigsize)+' mse change')
                     t = time.time()
                  #end
              else:
@@ -685,7 +685,7 @@ def greed_omp_qr(x,A,m,opts=[]):
                     done = 1
                  elif verbose and time.time() - t > 10.0/1000: # time() returns sec
                     #display(sprintf('Iteration #i. --- #i mse change',iter ,(oldERR - ERR)/sigsize)) 
-                    print 'Iteration '+iter+'. --- '+((oldERR - ERR)/sigsize)+' mse change'
+                    print('Iteration '+iter+'. --- '+((oldERR - ERR)/sigsize)+' mse change')
                     t = time.time()
                  #end
              #end
@@ -694,7 +694,7 @@ def greed_omp_qr(x,A,m,opts=[]):
                  done = 1 
               elif verbose and time.time() - t > 10.0/1000: # time() returns sec
                   #display(sprintf('Iteration #i. --- #i corr',iter ,max(abs(DR)))) 
-                  print 'Iteration '+iter+'. --- '+(np.abs(DR).max())+' corr'
+                  print('Iteration '+iter+'. --- '+(np.abs(DR).max())+' corr')
                   t = time.time()
               #end
           #end
@@ -705,7 +705,7 @@ def greed_omp_qr(x,A,m,opts=[]):
                  done = 1
                  # Nic: added verbose check
                  if verbose:
-                     print 'Stopping. Exact signal representation found!'
+                     print('Stopping. Exact signal representation found!')
              #end
          else:
              if iter > 1:
@@ -713,7 +713,7 @@ def greed_omp_qr(x,A,m,opts=[]):
                      done = 1 
                      # Nic: added verbose check
                      if verbose:
-                         print 'Stopping. Exact signal representation found!'
+                         print('Stopping. Exact signal representation found!')
                  #end
              #end
          #end
@@ -723,7 +723,7 @@ def greed_omp_qr(x,A,m,opts=[]):
              done = 1 
              # Nic: added verbose check
              if verbose:
-                 print 'Stopping. Maximum number of iterations reached!'
+                 print('Stopping. Maximum number of iterations reached!')
          #end
          
          ###########################################################################
@@ -754,7 +754,7 @@ def greed_omp_qr(x,A,m,opts=[]):
         iter_time = iter_time[0:iter-1]
     #end
     if verbose:
-       print 'Done'
+       print('Done')
     #end
     
     # Return

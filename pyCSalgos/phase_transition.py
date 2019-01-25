@@ -16,12 +16,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
+import matplotlib.ticker as mticker
 import datetime
 import hdf5storage
-import cPickle
+import pickle
 import multiprocessing
 
-import generate as gen
+from . import generate as gen
 
 
 class PhaseTransition(with_metaclass(ABCMeta, object)):
@@ -127,7 +128,7 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
                 else:
                     basename = basename + [strdatetime + "_erc_" + str(i) for i in range(len(self.ERCsolvers))]
         # if a string, convert to a list
-        if isinstance(basename, types.StringTypes):
+        if isinstance(basename, (str,)):
             basename = [basename]
         iterFilename = iter(basename)
 
@@ -202,10 +203,14 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
                 plt.xlabel(r"$\delta$")
                 plt.ylabel(r"$\rho$")
                 # Show x and y ticks: always 3 ticks: left, middle, right
-                tcks = [0, (self.deltas.size-1)/2, self.deltas.size-1]
-                plt.xticks(tcks, self.deltas[tcks])
-                tcks = [0, (self.rhos.size-1)/2, self.rhos.size-1]
-                plt.yticks(tcks, self.rhos[tcks])
+                # x ticks
+                tcks = np.array([0, (self.deltas.size-1)/2, self.deltas.size-1], dtype=int)
+                plt.xticks(tcks, ['%.2f'%(self.deltas[tck]) for tck in tcks])
+                #plt.gca().xaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
+                # y ticks
+                tcks = np.array([0, (self.rhos.size-1)/2, self.rhos.size-1], dtype=int)
+                plt.yticks(tcks, ['%.2f'%(self.rhos[tck]) for tck in tcks])
+                #plt.gca().yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
 
                 if not subplot:
                     # separate figure, save each
@@ -244,16 +249,16 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
             basename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")
 
         # dictionary to save
-        mdict = {u'signaldim': self.signaldim, u'dictdim': self.dictdim, u'numdata': self.numdata,
-                 u'deltas': self.deltas, u'rhos': self.rhos, u'snr_db': self.snr_db,
-                 u'solverNames': self.solverNames, u'ERCsolverNames': self.ERCsolverNames,
-                 u'err': self.err, u'ERCsuccess': self.ERCsuccess, u'simData': self.simData,
-                 u'description': self.get_description()}
+        mdict = {'signaldim': self.signaldim, 'dictdim': self.dictdim, 'numdata': self.numdata,
+                 'deltas': self.deltas, 'rhos': self.rhos, 'snr_db': self.snr_db,
+                 'solverNames': self.solverNames, 'ERCsolverNames': self.ERCsolverNames,
+                 'err': self.err, 'ERCsuccess': self.ERCsuccess, 'simData': self.simData,
+                 'description': self.get_description()}
 
         hdf5storage.savemat(basename + '.mat', mdict)
-        with open(basename+".pickle", "w") as f:
-            cPickle.dump(self.solvers, f)
-            cPickle.dump(self.ERCsolvers, f)
+        with open(basename+".pickle", "wb") as f:
+            pickle.dump(self.solvers, f)
+            pickle.dump(self.ERCsolvers, f)
         with open(basename+".txt", "w") as f:
             f.write(self.get_description())
 
@@ -268,22 +273,22 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
 
         if picklefilename is not None:
             with open(picklefilename, "r") as f:
-                solvers = cPickle.load(f)
+                solvers = pickle.load(f)
                 self.set_solvers(solvers)
 
         if matfilename is not None:
             mdict = hdf5storage.loadmat(matfilename)
-            self.signaldim = mdict[u'signaldim']
-            self.dictdim = mdict[u'dictdim']
-            self.numdata = mdict[u'numdata']
-            self.deltas = mdict[u'deltas'].copy()
-            self.rhos = mdict[u'rhos'].copy()
-            if mdict[u'err'] is not None:
-                self.err = mdict[u'err'].copy()
-            if mdict[u'ERCsuccess'] is not None:
-                self.ERCsuccess = mdict[u'ERCsuccess'].copy()
-            if u'simData' in mdict.keys():
-                self.simData = mdict[u'simData']
+            self.signaldim = mdict['signaldim']
+            self.dictdim = mdict['dictdim']
+            self.numdata = mdict['numdata']
+            self.deltas = mdict['deltas'].copy()
+            self.rhos = mdict['rhos'].copy()
+            if mdict['err'] is not None:
+                self.err = mdict['err'].copy()
+            if mdict['ERCsuccess'] is not None:
+                self.ERCsuccess = mdict['ERCsuccess'].copy()
+            if 'simData' in list(mdict.keys()):
+                self.simData = mdict['simData']
 
     @classmethod
     def dump(self, filename):
@@ -292,7 +297,7 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         :return: Nothing
         """
         with open(filename, "w") as f:
-            cPickle.dump(self,f)
+            pickle.dump(self,f)
 
     @classmethod
     def load(cls, filename):
@@ -302,7 +307,7 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         :return: The loaded object
         """
         with open(filename, "r") as f:
-            obj = cPickle.load(f)
+            obj = pickle.load(f)
         return obj
 
 
@@ -404,13 +409,13 @@ class SynthesisPhaseTransition(PhaseTransition):
                     measurements, acqumatrix, realdata, dictionary, realgamma, realsupport, cleardata = \
                         gen.make_compressed_sensing_problem(
                             m, self.signaldim, self.dictdim, k, self.numdata, self.snr_db, self.dict_type, self.acqu_type, random_state=random_state)
-                    self.simData[idelta][irho][u'measurements'] = measurements
-                    self.simData[idelta][irho][u'acqumatrix'] = acqumatrix
-                    self.simData[idelta][irho][u'realdata'] = realdata
-                    self.simData[idelta][irho][u'dictionary'] = dictionary
-                    self.simData[idelta][irho][u'realgamma'] = realgamma
-                    self.simData[idelta][irho][u'realsupport'] = realsupport
-                    self.simData[idelta][irho][u'cleardata'] = cleardata
+                    self.simData[idelta][irho]['measurements'] = measurements
+                    self.simData[idelta][irho]['acqumatrix'] = acqumatrix
+                    self.simData[idelta][irho]['realdata'] = realdata
+                    self.simData[idelta][irho]['dictionary'] = dictionary
+                    self.simData[idelta][irho]['realgamma'] = realgamma
+                    self.simData[idelta][irho]['realsupport'] = realsupport
+                    self.simData[idelta][irho]['cleardata'] = cleardata
 
         # Only run if solve or check
         if solve or check:
@@ -418,13 +423,13 @@ class SynthesisPhaseTransition(PhaseTransition):
             # Generate map parameters
             task_parameters = [(self.solvers,
                                 self.ERCsolvers,
-                                self.simData[idelta][irho][u'measurements'],
-                                self.simData[idelta][irho][u'acqumatrix'],
-                                self.simData[idelta][irho][u'dictionary'],
-                                self.simData[idelta][irho][u'realdata'],
-                                self.simData[idelta][irho][u'realgamma'],
-                                self.simData[idelta][irho][u'realsupport'],
-                                self.simData[idelta][irho][u'cleardata'],
+                                self.simData[idelta][irho]['measurements'],
+                                self.simData[idelta][irho]['acqumatrix'],
+                                self.simData[idelta][irho]['dictionary'],
+                                self.simData[idelta][irho]['realdata'],
+                                self.simData[idelta][irho]['realgamma'],
+                                self.simData[idelta][irho]['realsupport'],
+                                self.simData[idelta][irho]['cleardata'],
                                 solve,
                                 check
                                )
@@ -573,20 +578,20 @@ class AnalysisPhaseTransition(PhaseTransition):
                 pool = multiprocessing.Pool(processes=processes)
             results = pool.map(tuplewrap_make_analysis_compressed_sensing_problem, gen_parameters)
         else:
-            results = map(tuplewrap_make_analysis_compressed_sensing_problem, gen_parameters)
+            results = list(map(tuplewrap_make_analysis_compressed_sensing_problem, gen_parameters))
 
         # Process generation results
         result_iter = iter(results)
         for idelta in range(len(self.deltas)):
             for irho in range(len(self.rhos)):
                 result = next(result_iter)
-                self.simData[idelta][irho][u'measurements'] = result[0]
-                self.simData[idelta][irho][u'acqumatrix'] = result[1]
-                self.simData[idelta][irho][u'realdata'] = result[2]
-                self.simData[idelta][irho][u'operator'] = result[3]
-                self.simData[idelta][irho][u'realgamma'] = result[4]
-                self.simData[idelta][irho][u'realcosupport'] = result[5]
-                self.simData[idelta][irho][u'cleardata'] = result[6]
+                self.simData[idelta][irho]['measurements'] = result[0]
+                self.simData[idelta][irho]['acqumatrix'] = result[1]
+                self.simData[idelta][irho]['realdata'] = result[2]
+                self.simData[idelta][irho]['operator'] = result[3]
+                self.simData[idelta][irho]['realgamma'] = result[4]
+                self.simData[idelta][irho]['realcosupport'] = result[5]
+                self.simData[idelta][irho]['cleardata'] = result[6]
 
         # Only run if solve or check
         if solve or check:
@@ -594,22 +599,22 @@ class AnalysisPhaseTransition(PhaseTransition):
             # Make run parameters
             run_parameters = [(self.solvers,
                                 self.ERCsolvers,
-                                self.simData[idelta][irho][u'measurements'],
-                                self.simData[idelta][irho][u'acqumatrix'],
-                                self.simData[idelta][irho][u'operator'],
-                                self.simData[idelta][irho][u'realdata'],
-                                self.simData[idelta][irho][u'realgamma'],
-                                self.simData[idelta][irho][u'realcosupport'],
-                                self.simData[idelta][irho][u'cleardata'],
+                                self.simData[idelta][irho]['measurements'],
+                                self.simData[idelta][irho]['acqumatrix'],
+                                self.simData[idelta][irho]['operator'],
+                                self.simData[idelta][irho]['realdata'],
+                                self.simData[idelta][irho]['realgamma'],
+                                self.simData[idelta][irho]['realcosupport'],
+                                self.simData[idelta][irho]['cleardata'],
                                 solve,
                                 check
                                )
                                for idelta in range(len(self.deltas)) for irho in range(len(self.rhos))
             ]
 
-            print "Starting solver processes:"
+            print("Starting solver processes:")
             time_start = datetime.datetime.now()
-            print time_start.strftime("%Y-%m-%d --- %H:%M:%S:%f")
+            print(time_start.strftime("%Y-%m-%d --- %H:%M:%S:%f"))
 
             # Run run tasks
             if processes is not 1:
@@ -617,7 +622,7 @@ class AnalysisPhaseTransition(PhaseTransition):
                     pool = multiprocessing.Pool(processes=processes)
                 results = pool.map(run_analysis_delta_rho, run_parameters)
             else:
-                results = map(run_analysis_delta_rho, run_parameters)
+                results = list(map(run_analysis_delta_rho, run_parameters))
 
             # Process results
             result_iter = iter(results)
@@ -630,8 +635,8 @@ class AnalysisPhaseTransition(PhaseTransition):
                         self.ERCsuccess[:,idelta,irho,:] = result[1]
 
             time_end = datetime.datetime.now()
-            print "End time: " + time_end.strftime("%Y-%m-%d --- %H:%M:%S:%f")
-            print "Elapsed: " + str((time_end - time_start).seconds) + " seconds"
+            print("End time: " + time_end.strftime("%Y-%m-%d --- %H:%M:%S:%f"))
+            print("Elapsed: " + str((time_end - time_start).seconds) + " seconds")
 
 
 # this can be avoided in python 3.3
@@ -657,7 +662,7 @@ def run_analysis_delta_rho(tuple_data):
 
     realsupport = np.zeros((operator.shape[0] - realcosupport.shape[0], realcosupport.shape[1]), dtype=int)
     for i in range(realcosupport.shape[1]):
-        realsupport[:, i] = np.setdiff1d(range(operator.shape[0]), realcosupport[:, i])
+        realsupport[:, i] = np.setdiff1d(list(range(operator.shape[0])), realcosupport[:, i])
 
     # Prepare results
     num_data = measurements.shape[1]

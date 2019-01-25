@@ -15,7 +15,7 @@ Created on Sat Nov 05 18:39:54 2011
 import numpy
 import math
 #import cvxpy
-import EllipseProj
+from . import EllipseProj
 
 
 
@@ -55,7 +55,7 @@ def SL0_approx(A, x, eps, sigma_min, sigma_decrease_factor=0.5, mu_0=2, L=3, A_p
       if ShowProgress:
           #fprintf('     sigma=#f, SNR=#f\n',sigma,estimate_SNR(s,true_s))
           string = '     sigma=%f, SNR=%f\n' % sigma,estimate_SNR(s,true_s)
-          print string
+          print(string)
       
       sigma = sigma * sigma_decrease_factor
   
@@ -98,7 +98,7 @@ def SL0_approx_cvxpy(A, x, eps, sigma_min, sigma_decrease_factor=0.5, mu_0=2, L=
       if ShowProgress:
           #fprintf('     sigma=#f, SNR=#f\n',sigma,estimate_SNR(s,true_s))
           string = '     sigma=%f, SNR=%f\n' % sigma,estimate_SNR(s,true_s)
-          print string
+          print(string)
       
       sigma = sigma * sigma_decrease_factor
   
@@ -136,7 +136,7 @@ def SL0_approx_dai(A, x, eps, sigma_min, sigma_decrease_factor=0.5, mu_0=2, L=3,
             #s = s - (1.0 - eps/numpy.linalg.norm(numpy.dot(A,direction))) * direction
             try:
               s = EllipseProj.ellipse_proj_dai(A,x,s,eps)
-            except Exception, e:
+            except Exception as e:
               #raise EllipseProj.EllipseProjDaiError(e)
               raise EllipseProj.EllipseProjDaiError()
               
@@ -146,7 +146,7 @@ def SL0_approx_dai(A, x, eps, sigma_min, sigma_decrease_factor=0.5, mu_0=2, L=3,
       if ShowProgress:
           #fprintf('     sigma=#f, SNR=#f\n',sigma,estimate_SNR(s,true_s))
           string = '     sigma=%f, SNR=%f\n' % sigma,estimate_SNR(s,true_s)
-          print string
+          print(string)
       
       sigma = sigma * sigma_decrease_factor
   
@@ -208,7 +208,7 @@ def SL0_approx_proj(A, x, eps, sigma_min, sigma_decrease_factor=0.5, mu_0=2, L=3
       if ShowProgress:
           #fprintf('     sigma=#f, SNR=#f\n',sigma,estimate_SNR(s,true_s))
           string = '     sigma=%f, SNR=%f\n' % sigma,estimate_SNR(s,true_s)
-          print string
+          print(string)
       
       sigma = sigma * sigma_decrease_factor
   
@@ -257,7 +257,7 @@ def SL0_approx_unconstrained(A, x, eps, lmbda, sigma_min, sigma_decrease_factor=
       if ShowProgress:
           #fprintf('     sigma=#f, SNR=#f\n',sigma,estimate_SNR(s,true_s))
           string = '     sigma=%f, SNR=%f\n' % sigma,estimate_SNR(s,true_s)
-          print string
+          print(string)
       
       sigma = sigma * sigma_decrease_factor
   
@@ -314,7 +314,7 @@ def SL0_approx_analysis(Aeps, Aexact, x, eps, sigma_min, sigma_decrease_factor=0
       if ShowProgress:
           #fprintf('     sigma=#f, SNR=#f\n',sigma,estimate_SNR(s,true_s))
           string = '     sigma=%f, SNR=%f\n' % sigma,estimate_SNR(s,true_s)
-          print string
+          print(string)
       
       sigma = sigma * sigma_decrease_factor
   
@@ -369,7 +369,7 @@ def SL0_approx_analysis_cvxpy(Aeps, Aexact, x, eps, sigma_min, sigma_decrease_fa
       if ShowProgress:
           #fprintf('     sigma=#f, SNR=#f\n',sigma,estimate_SNR(s,true_s))
           string = '     sigma=%f, SNR=%f\n' % sigma,estimate_SNR(s,true_s)
-          print string
+          print(string)
       
       sigma = sigma * sigma_decrease_factor
   
@@ -418,7 +418,7 @@ def SL0_approx_analysis_dai(Aeps, Aexact, x, eps, sigma_min, sigma_decrease_fact
             #  s = s - (1.0 - eps/numpy.linalg.norm(numpy.dot(Aeps,direction))) * direction
             try:
               s = EllipseProj.ellipse_proj_dai(Aeps,x,s,eps)
-            except Exception, e:
+            except Exception as e:
               #raise EllipseProj.EllipseProjDaiError(e)
               raise EllipseProj.EllipseProjDaiError()
 
@@ -427,7 +427,7 @@ def SL0_approx_analysis_dai(Aeps, Aexact, x, eps, sigma_min, sigma_decrease_fact
       if ShowProgress:
           #fprintf('     sigma=#f, SNR=#f\n',sigma,estimate_SNR(s,true_s))
           string = '     sigma=%f, SNR=%f\n' % sigma,estimate_SNR(s,true_s)
-          print string
+          print(string)
       
       sigma = sigma * sigma_decrease_factor
   
@@ -469,7 +469,7 @@ def SL0_robust_analysis(Aeps, Aexact, x, eps, sigma_min, sigma_decrease_factor=0
       if ShowProgress:
           #fprintf('     sigma=#f, SNR=#f\n',sigma,estimate_SNR(s,true_s))
           string = '     sigma=%f, SNR=%f\n' % sigma,estimate_SNR(s,true_s)
-          print string
+          print(string)
       
       sigma = sigma * sigma_decrease_factor
   

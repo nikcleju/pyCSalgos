@@ -20,7 +20,7 @@ def run():
     deltas = numpy.arange(0.1, 1, 0.3)
     rhos = numpy.arange(0.1, 1, 0.3)
 
-    print "Running analysis phase transition..."
+    print("Running analysis phase transition...")
     pt = AnalysisPhaseTransition(signal_size, dict_size, deltas, rhos, 3,
                                  [GreedyAnalysisPursuit(1e-8),
                                   #AnalysisL1Min(1e-8),

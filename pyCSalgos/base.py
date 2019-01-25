@@ -14,6 +14,8 @@ from abc import ABCMeta, abstractmethod
 
 
 # TODO: Could be derived from LinearModel instead?
+# Nic 29.07.2018: with_metaclass should be enough here, right?
+#class SparseSolver(with_metaclass(ABCMeta, BaseEstimator), metaclass=ABCMeta):
 class SparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
     """
     Base class for all synthesis-based solvers.
@@ -32,8 +34,6 @@ class SparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
     at the class level in their __init__ as explicit keyword
     arguments (no *args, **kwargs).    
     """
-
-    __metaclass__ = ABCMeta
     
     @abstractmethod
     def solve(self, data, dictionary, realdict=None):
@@ -53,6 +53,8 @@ class SparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
     #    """
     #    return unicode(super(SparseSolver,self).__repr__())
 
+# Nic 29.07.2018: with_metaclass should be enough here, right?
+# class AnalysisSparseSolver(with_metaclass(ABCMeta, BaseEstimator), metaclass=ABCMeta):
 class AnalysisSparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
     """
     Base class for all analysis-based solvers
@@ -72,8 +74,6 @@ class AnalysisSparseSolver(with_metaclass(ABCMeta, BaseEstimator)):
     at the class level in their __init__ as explicit keyword
     arguments (no *args, **kwargs).
     """
-
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def solve(self, measurements, acqumatrix, operator, realdict):

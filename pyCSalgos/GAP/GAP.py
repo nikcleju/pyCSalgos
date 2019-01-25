@@ -160,7 +160,7 @@ def ArgminOperL2Constrained(y, M, MH, Omega, OmegaH, Lambdahat, xinit, ilagmult,
     #        end
     
     #disp(['fidelity_error=', num2str(temp)]);
-    print 'fidelity_error=',temp
+    print('fidelity_error=',temp)
     #if iter == params['max_inner_iteration']:
         #disp('max_inner_iteration reached. l2_accuracy not achieved.');
     

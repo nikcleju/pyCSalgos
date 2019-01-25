@@ -73,14 +73,14 @@ def cgsolve(A, b, tol, maxiter, verbose=1):
       if ((verbose) and (divmod(numiter,verbose)[1]==0)):
         #disp(sprintf('cg: Iter = #d, Best residual = #8.3e, Current residual = #8.3e', ...
         #  numiter, bestres, sqrt(delta/delta0)));
-        print 'cg: Iter = ',numiter,', Best residual = ',bestres,', Current residual = ',math.sqrt(delta/delta0)
+        print('cg: Iter = ',numiter,', Best residual = ',bestres,', Current residual = ',math.sqrt(delta/delta0))
       #end
       
     #end
     
     if (verbose):
       #disp(sprintf('cg: Iterations = #d, best residual = #14.8e', numiter, bestres));
-      print 'cg: Iterations = ',numiter,', best residual = ',bestres
+      print('cg: Iterations = ',numiter,', best residual = ',bestres)
     #end
     x = bestx.copy()
     res = bestres
@@ -153,7 +153,7 @@ def l1qec_newton(x0, u0, A, At, b, epsilon, Aexact, tau, newtontol, newtonmaxite
         dx,cgres,cgiter = cgsolve(h11pfun, w1p, cgtol, cgmaxiter, 0)
         if (cgres > 1.0/2):
           if verbose:
-            print 'Cannot solve system.  Returning previous iterate.  (See Section 4 of notes for more information.)'
+            print('Cannot solve system.  Returning previous iterate.  (See Section 4 of notes for more information.)')
           xp = x.copy()
           up = u.copy()
           return xp,up,niter
@@ -185,13 +185,13 @@ def l1qec_newton(x0, u0, A, At, b, epsilon, Aexact, tau, newtontol, newtonmaxite
             hcond = 1.0/np.linalg.cond(Hp)
         except scipy.linalg.LinAlgError:
             if verbose:
-              print 'Matrix ill-conditioned.  Returning previous iterate.  (See Section 4 of notes for more information.)'
+              print('Matrix ill-conditioned.  Returning previous iterate.  (See Section 4 of notes for more information.)')
             xp = x.copy()
             up = u.copy()
             return xp,up,niter
         if hcond < 1e-14:
             if verbose:
-              print 'Matrix ill-conditioned.  Returning previous iterate.  (See Section 4 of notes for more information.)'
+              print('Matrix ill-conditioned.  Returning previous iterate.  (See Section 4 of notes for more information.)')
             xp = x.copy()
             up = u.copy()
             return xp,up,niter
@@ -244,7 +244,7 @@ def l1qec_newton(x0, u0, A, At, b, epsilon, Aexact, tau, newtontol, newtonmaxite
         backiter = backiter + 1
         if (backiter > 32):
           if verbose:
-            print 'Stuck on backtracking line search, returning previous iterate.  (See Section 4 of notes for more information.)'
+            print('Stuck on backtracking line search, returning previous iterate.  (See Section 4 of notes for more information.)')
           xp = x.copy()
           up = u.copy()
           return xp,up,niter
@@ -275,13 +275,13 @@ def l1qec_newton(x0, u0, A, At, b, epsilon, Aexact, tau, newtontol, newtonmaxite
       
       #disp(sprintf('Newton iter = #d, Functional = #8.3f, Newton decrement = #8.3f, Stepsize = #8.3e', ...
       if verbose:
-        print 'Newton iter = ',niter,', Functional = ',f,', Newton decrement = ',lambda2/2.0,', Stepsize = ',stepsize
+        print('Newton iter = ',niter,', Functional = ',f,', Newton decrement = ',lambda2/2.0,', Stepsize = ',stepsize)
 
       if verbose:
         if largescale:
-            print '                CG Res = ',cgres,', CG Iter = ',cgiter
+            print('                CG Res = ',cgres,', CG Iter = ',cgiter)
         else:
-            print '                  H11p condition number = ',hcond
+            print('                  H11p condition number = ',hcond)
       #end
           
     #end
@@ -315,14 +315,14 @@ def l1qec_logbarrier(x0, A, At, b, epsilon, Aexact, Atexact, bexact, lbtol=1e-3,
     if largescale:
       if np.linalg.norm(A(x0) - b) > epsilon or np.linalg.norm( np.dot(Aexact,x0) - bexact ) > 1e-15:
         if verbose:
-          print 'Starting point infeasible; using x0 = At*inv(AAt)*y.'
+          print('Starting point infeasible; using x0 = At*inv(AAt)*y.')
         #AAt = @(z) A(At(z));
         AAt = lambda z: A(At(z))
         # TODO: implement cgsolve
         w,cgres,cgiter = cgsolve(AAt, b, cgtol, cgmaxiter, 0)
         if (cgres > 1.0/2):
           if verbose:
-            print 'A*At is ill-conditioned: cannot find starting point'
+            print('A*At is ill-conditioned: cannot find starting point')
           xp = x0.copy()
           return xp
         #end
@@ -332,7 +332,7 @@ def l1qec_logbarrier(x0, A, At, b, epsilon, Aexact, Atexact, bexact, lbtol=1e-3,
       # Nic: add test for np.dot(Aexact,x0) - bexact ) > 1e-15
       if np.linalg.norm( np.dot(A,x0) - b ) > epsilon or np.linalg.norm( np.dot(Aexact,x0) - bexact ) > 1e-15:
         if verbose:
-          print 'Starting point infeasible; using x0 = At*inv(AAt)*y.'
+          print('Starting point infeasible; using x0 = At*inv(AAt)*y.')
         
         #Nic: stack A and Aexact, b and bexact, and use them instead of A and b
         Abig = np.vstack((A,Aexact))
@@ -343,12 +343,12 @@ def l1qec_logbarrier(x0, A, At, b, epsilon, Aexact, Atexact, bexact, lbtol=1e-3,
             hcond = 1.0/np.linalg.cond(np.dot(Abig,Abig.T))
         except scipy.linalg.LinAlgError:
             if verbose:
-              print 'A*At is ill-conditioned: cannot find starting point'
+              print('A*At is ill-conditioned: cannot find starting point')
             xp = x0.copy()
             return xp
         if hcond < 1e-14:
             if verbose:
-              print 'A*At is ill-conditioned: cannot find starting point'
+              print('A*At is ill-conditioned: cannot find starting point')
             xp = x0.copy()
             return xp           
         x0 = np.dot(Abig.T, w)        
@@ -373,7 +373,7 @@ def l1qec_logbarrier(x0, A, At, b, epsilon, Aexact, Atexact, bexact, lbtol=1e-3,
     
     #disp(sprintf('Original l1 norm = #.3f, original functional = #.3f', sum(abs(x0)), sum(u)));
     if verbose:
-      print 'Original l1 norm = ',np.abs(x0).sum(),'original functional = ',u.sum()
+      print('Original l1 norm = ',np.abs(x0).sum(),'original functional = ',u.sum())
     
     # choose initial value of tau so that the duality gap after the first
     # step will be about the origial norm
@@ -382,7 +382,7 @@ def l1qec_logbarrier(x0, A, At, b, epsilon, Aexact, Atexact, bexact, lbtol=1e-3,
     lbiter = math.ceil((math.log(2*N+1)-math.log(lbtol)-math.log(tau))/math.log(mu))
     #disp(sprintf('Number of log barrier iterations = #d\n', lbiter));
     if verbose:
-      print 'Number of log barrier iterations = ',lbiter
+      print('Number of log barrier iterations = ',lbiter)
     
     totaliter = 0
     
@@ -400,7 +400,7 @@ def l1qec_logbarrier(x0, A, At, b, epsilon, Aexact, Atexact, bexact, lbtol=1e-3,
       #disp(sprintf('\nLog barrier iter = #d, l1 = #.3f, functional = #8.3f, tau = #8.3e, total newton iter = #d\n', ...
       #  ii, sum(abs(xp)), sum(up), tau, totaliter));
       if verbose:
-        print 'Log barrier iter = ',ii,', l1 = ',np.abs(xp).sum(),', functional = ',up.sum(),', tau = ',tau,', total newton iter = ',totaliter
+        print('Log barrier iter = ',ii,', l1 = ',np.abs(xp).sum(),', functional = ',up.sum(),', tau = ',tau,', total newton iter = ',totaliter)
       x = xp.copy()
       u = up.copy()
      

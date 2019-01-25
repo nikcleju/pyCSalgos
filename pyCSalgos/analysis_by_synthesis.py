@@ -6,7 +6,7 @@ Perform analysis-based recovery based on synthesis recovery
 
 import numpy as np
 
-from base import AnalysisSparseSolver, SparseSolver
+from .base import AnalysisSparseSolver, SparseSolver
 
 
 class AnalysisBySynthesis(AnalysisSparseSolver):
@@ -44,7 +44,7 @@ class AnalysisBySynthesis(AnalysisSparseSolver):
         realcosupport = realdict['cosupport']
         realsupport = np.zeros((operator.shape[0] - realcosupport.shape[0], realcosupport.shape[1]), dtype=int)
         for i in range(realcosupport.shape[1]):
-            realsupport[:, i] = np.setdiff1d(range(operator.shape[0]), realcosupport[:, i])
+            realsupport[:, i] = np.setdiff1d(list(range(operator.shape[0])), realcosupport[:, i])
 
         datatilde = np.concatenate((realdict['data'], np.zeros((operatorsize-signalsize, realdict['data'].shape[1]))))
         realdict_synth = {'data': datatilde, 'gamma': realdict['gamma'], 'support': realsupport}

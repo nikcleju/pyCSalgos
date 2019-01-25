@@ -319,7 +319,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
   opts,AAtinv,userSet = setOpts(opts,'AAtinv',None);
   opts,USV,userSet = setOpts(opts,'USV',None);
   #if ~isempty(USV)
-  if len(USV.keys()):
+  if len(list(USV.keys())):
       #if isstruct(USV)
       
       Q = USV['U']  # we can't use "U" as the variable name
@@ -355,7 +355,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
       #if norm( AAtz - z )/norm(z) > 1e-8
       if numpy.linalg.norm(AAtz - z) / numpy.linalg.norm(z) > 1e-8:
           #error('Measurement matrix A must be a partial isometry: AA''=I');
-          print 'Measurement matrix A must be a partial isometry: AA''=I'
+          print('Measurement matrix A must be a partial isometry: AA''=I')
           raise NestaError('Measurement matrix A must be a partial isometry: AA''=I')
       #end
   #end
@@ -375,7 +375,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
           #if delta > 0 && isempty(USV)
           if delta > 0 and USV is None:
               #error('delta must be zero for non-projections');
-              print 'delta must be zero for non-projections'
+              print('delta must be zero for non-projections')
               raise NesteError('delta must be zero for non-projections')
           #end
           #if isa(AAtinv,'function_handle')
@@ -423,7 +423,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
     mu0 = 0.9*max(abs(Ux_ref))
   elif TypeMin.lower() == 'tv':
     #mu0 = ValMUTv(Ux_ref);
-    print 'Nic: TODO: not implemented yet'
+    print('Nic: TODO: not implemented yet')
     raise NestaError('Nic: TODO: not implemented yet')
   
   # -- If U was set by the user and normU not supplied, then calcuate norm(U)
@@ -463,7 +463,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
               normU,cnt = my_normest(U,Ut,xplug.size,1e-3,30)
               #if cnt == 30, printf('Warning: norm(U) may be inaccurate\n'); end
               if cnt == 30:
-                print 'Warning: norm(U) may be inaccurate'
+                print('Warning: norm(U) may be inaccurate')
           else:
               mU,nU = U.shape
               if mU < nU:
@@ -484,7 +484,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
                   if min(U.shape) > 2000:
                       # norm(randn(2000)) takes about 5 seconds on my PC
                       #printf('Warning: calculation of norm(U) may be slow\n');
-                      print 'Warning: calculation of norm(U) may be slow'
+                      print('Warning: calculation of norm(U) may be slow')
                   #end
                   normU = math.sqrt( numpy.linalg.norm(UU, 2) );
               #end
@@ -510,7 +510,7 @@ def NESTA(A,At,b,muf,delta,opts=None):
       #if Verbose, printf('\tBeginning #s Minimization; mu = #g\n',opts.TypeMin,mu); end
       if Verbose:
         #printf('\tBeginning #s Minimization; mu = #g\n',opts.TypeMin,mu)
-        print '   Beginning', opts['TypeMin'],'Minimization; mu =',mu
+        print('   Beginning', opts['TypeMin'],'Minimization; mu =',mu)
       
       #[xk,niter_int,res,out,optsOut] = Core_Nesterov(A,At,b,mu,delta,opts);
       xk,niter_int,res,out,optsOut = Core_Nesterov(A,At,b,mu,delta,opts)
@@ -538,11 +538,11 @@ def setOpts(opts,field,default,mn=None,mx=None):
     var = default
     # has the option already been set?
     #if ~isfield(opts,field) 
-    if field in opts.keys():
+    if field in list(opts.keys()):
         # see if there is a capitalization problem:
         #names = fieldnames(opts);
         #for i = 1:length(names)
-        for key in opts.keys():
+        for key in list(opts.keys()):
             #if strcmpi(names{i},field)
             if key.lower() == field.lower():
                 #opts.(field) = opts.(names{i});
@@ -556,7 +556,7 @@ def setOpts(opts,field,default,mn=None,mx=None):
     #end
     
     #if isfield(opts,field) && ~isempty(opts.(field))
-    if field in opts.keys() and (opts[field] is not None):
+    if field in list(opts.keys()) and (opts[field] is not None):
         #var = opts.(field);  # override the default
         var = opts[field]
         userSet = True
@@ -569,7 +569,7 @@ def setOpts(opts,field,default,mn=None,mx=None):
         if var < mn:
             #printf('Variable #s is #f, should be at least #f\n',...
             #    field,var,mn); error('variable out-of-bounds');
-            print 'Variable',field,'is',var,', should be at least',mn
+            print('Variable',field,'is',var,', should be at least',mn)
             raise NestaError('setOpts error: value too small')
         #end
     #end
@@ -578,7 +578,7 @@ def setOpts(opts,field,default,mn=None,mx=None):
         if var > mx:
             #printf('Variable #s is #f, should be at least #f\n',...
             #    field,var,mn); error('variable out-of-bounds');
-            print 'Variable',field,'is',var,', should be at most',mx
+            print('Variable',field,'is',var,', should be at most',mx)
             raise NestaError('setOpts error: value too large')
         #end
     #end
@@ -1097,7 +1097,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
   opts,normU,userSet = setOpts(opts,'normU',1);
   
   if delta < 0:
-    print 'delta must be greater or equal to zero'
+    print('delta must be greater or equal to zero')
     raise NestaError('delta must be greater or equal to zero')
   
   if hasattr(A,'__call__'):
@@ -1181,7 +1181,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
   
   #---- TV Minimization
   if TypeMin == 'TV':
-    print 'Nic:TODO: TV minimization not yet implemented!'
+    print('Nic:TODO: TV minimization not yet implemented!')
     raise NestaError('Nic:TODO: TV minimization not yet implemented!')
   #if strcmpi(TypeMin,'TV')
   #    Lmu = 8*Lmu;
@@ -1281,7 +1281,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
                   projection,projIter,lambdaY = fastProjection(Q,S,V,dfp,bp,deltap, .999*lambdaY_old )
                   #if lambdaY > 0, disp('lambda is positive!'); keyboard; end
                   if lambdaY > 0:
-                    print 'lambda is positive!'
+                    print('lambda is positive!')
                     raise NestaError('lambda is positive!')
                   yk = xk + projection;
                   Ayk = Afun(yk);
@@ -1386,7 +1386,7 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
               else:
                   projection,projIter,lambdaZ = fastProjection(Q,S,V,dfp,bp,deltap, .999*lambdaZ )
                   if lambdaZ > 0:
-                    print 'lambda is positive!'
+                    print('lambda is positive!')
                     raise NestaError('lambda is positive!')
                   zk = projection.copy();
                   #             zk = SLmu1*projection;
@@ -1435,16 +1435,16 @@ def Core_Nesterov(A,At,b,mu,delta,opts):
       #if ~mod(k+1,Verbose )
       if Verbose and not numpy.mod(k+1,Verbose):
           #printf('Iter: #3d  ~ fmu: #.3e ~ Rel. Variation of fmu: #.2e ~ Residual: #.2e',k+1,fx,qp,residuals(k+1,1) ); 
-          print 'Iter: ',k+1,'  ~ fmu: ',fx,' ~ Rel. Variation of fmu: ',qp,' ~ Residual:',residuals[k,0]
+          print('Iter: ',k+1,'  ~ fmu: ',fx,' ~ Rel. Variation of fmu: ',qp,' ~ Residual:',residuals[k,0])
           #--- if user has supplied a function to calculate the error,
           # apply it to the current iterate and dislay the output:
           #if DISPLAY_ERROR, printf(' ~ Error: #.2e',errFcn(xk)); end
           if DISPLAY_ERROR:
-            print ' ~ Error:',errFcn(xk)
+            print(' ~ Error:',errFcn(xk))
       #end
       if abs(fx)>1e20 or abs(residuals[k,0]) >1e20 or numpy.isnan(fx):
           #error('Nesta: possible divergence or NaN.  Bad estimate of ||A''A||?');
-          print 'Nesta: possible divergence or NaN.  Bad estimate of ||A''A||?'
+          print('Nesta: possible divergence or NaN.  Bad estimate of ||A''A||?')
           raise NestaError('Nesta: possible divergence or NaN.  Bad estimate of ||A''A||?')
       #end
   
@@ -1713,7 +1713,7 @@ def fastProjection( U, S, V, y, b, epsilon, lambda0=0, DISP=False ):
       d = -ff/fpl;
       #      if DISP, fprintf('#2d, lambda is #5.2f, f(lambda) is #.2e, f''(lambda) is #.2e\n',k,l,ff,fpl ); end
       if DISP:
-        print k,', lambda is ',l,', f(lambda) is ',ff,', f''(lambda) is',fpl
+        print(k,', lambda is ',l,', f(lambda) is ',ff,', f''(lambda) is',fpl)
       #if abs(ff) < TOL, break; end        # stopping criteria
       if abs(ff) < TOL:
         break
@@ -1724,7 +1724,7 @@ def fastProjection( U, S, V, y, b, epsilon, lambda0=0, DISP=False ):
           #         oldff = f(0);
           oldff = b2.sum(); oldff = oldff - epsilon2;
           if DISP:
-            print 'restarting'
+            print('restarting')
       else:
           if alpha < 1:
             alpha = (alpha+1.0)/2.0
@@ -1739,7 +1739,7 @@ def fastProjection( U, S, V, y, b, epsilon, lambda0=0, DISP=False ):
       if l_old == l and l == 0:
           #if DISP, disp('Making no progress; x = y is probably feasible'); end
           if DISP:
-            print 'Making no progress; x = y is probably feasible'
+            print('Making no progress; x = y is probably feasible')
           break;
       #end
   #end

@@ -34,8 +34,8 @@ def subtest_make_sparse_coded_signal(n,N,k,Ndata,snr_db,use_sklearn):
     X, D, gamma, support, clearX = make_sparse_coded_signal(n, N, k, Ndata, snr_db, "randn", use_sklearn)
 
     # check shapes
-    print X.shape
-    print (n, N)
+    print(X.shape)
+    print((n, N))
 
     assert_equal(X.shape, (n, Ndata), "X shape mismatch")
     assert_equal(D.shape, (n, N), "D shape mismatch")
@@ -51,7 +51,7 @@ def subtest_make_sparse_coded_signal(n,N,k,Ndata,snr_db,use_sklearn):
 
     for i in range(Ndata):
         assert(numpy.all(gamma[support[:, i], i])) # check if all support is non-zero
-        izero = numpy.setdiff1d(range(N), support[:, i])
+        izero = numpy.setdiff1d(list(range(N)), support[:, i])
         assert(not numpy.any(gamma[izero, i])) # check if all zeros are zero
 
 
@@ -133,7 +133,7 @@ def test_make_cosparse_coded_signal():
     #
     for i in range(numdata):
         assert(numpy.all(gamma[cosupport[:, i], i]) == 0) # check if all cosupport is zero
-        inonzero = numpy.setdiff1d(range(N), cosupport[:, i])
+        inonzero = numpy.setdiff1d(list(range(N)), cosupport[:, i])
         assert(numpy.all(gamma[inonzero, i])) # check if all non-zeros are non-zero
 
 
