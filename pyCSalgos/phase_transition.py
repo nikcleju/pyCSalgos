@@ -381,10 +381,10 @@ class SynthesisPhaseTransition(PhaseTransition):
     Class for running and plotting synthesis-based phase transitions
     """
 
-    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers=[], dict_type="randn", acqu_type="randn"):
+    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers=[], dictionary="randn", acqumatrix="randn"):
         super(SynthesisPhaseTransition, self).__init__(signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers)
-        self.dict_type=dict_type
-        self.acqu_type=acqu_type
+        self.dictionary=dictionary
+        self.acqumatrix=acqumatrix
 
     def run(self, solve=True, check=False, processes=None, random_state=None):
 
@@ -403,8 +403,7 @@ class SynthesisPhaseTransition(PhaseTransition):
         if check is True:
             #self.ERCsuccess = [np.zeros(shape=(len(self.deltas), len(self.rhos), self.numdata), dtype=bool)
             #                   for _ in self.ERCsolvers]
-            self.ERCsuccess = \
-                np.zeros(shape=(len(self.ERCsolvers), len(self.deltas), len(self.rhos), self.numdata), dtype=bool)
+            self.ERCsuccess = np.zeros(shape=(len(self.ERCsolvers), len(self.deltas), len(self.rhos), self.numdata), dtype=bool)
 
         if not self.simData:
             # a 2D list of dictionaries, size deltas x rhos
@@ -419,7 +418,7 @@ class SynthesisPhaseTransition(PhaseTransition):
                 if not self.simData[idelta][irho]:
                     measurements, acqumatrix, realdata, dictionary, realgamma, realsupport, cleardata = \
                         gen.make_compressed_sensing_problem(
-                            m, self.signaldim, self.dictdim, k, self.numdata, self.snr_db, self.dict_type, self.acqu_type, random_state=random_state)
+                            m, self.signaldim, self.dictdim, k, self.numdata, self.snr_db, self.dictionary, self.acqumatrix, random_state=random_state)
                     self.simData[idelta][irho][u'measurements'] = measurements
                     self.simData[idelta][irho][u'acqumatrix'] = acqumatrix
                     self.simData[idelta][irho][u'realdata'] = realdata
