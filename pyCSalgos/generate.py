@@ -16,8 +16,27 @@ except ImportError as e:
     # module doesn't exist
     has_sklearn_datasets = False
 
+def add_noise_snr(data, snr_db, rng=None):
+    """
+    Adda a certain amount of noise over some data.
+    The amount of noise is specified in SNR [db]
+    """
+    if rng is not None:
+        # Add noise on data
+        if numpy.isfinite(snr_db):
+            noise = rng.randn(*data.shape)
+            SNR_norm = 10**(snr_db/20.)
+            for i in range(data.shape[1]):
+                # Make norm 1
+                noise[:,i] = noise[:,i] / numpy.linalg.norm(noise[:,i])
+                # Make noise norm = smaller than data by SNR_norm
+                noise[:,i] = noise[:,i] * numpy.linalg.norm(data[:,i]) / SNR_norm
+        else:
+            noise = 0
+    
+    return data + noise
 
-def make_sparse_coded_signal(signal_size, dict_size, sparsity, num_data, snr_db, dictionary="randn",
+def make_sparse_coded_signal(signal_size, dict_size, sparsity, num_data, snr_db_sparse, snr_db_signal, dictionary="randn",
                              use_sklearn=True, random_state=None):
     """
     Generate sparse coded signals.
@@ -62,7 +81,7 @@ def make_sparse_coded_signal(signal_size, dict_size, sparsity, num_data, snr_db,
     # Generate coefficients matrix
     support = numpy.zeros((sparsity, num_data), dtype=int)
 
-    if dictionary == "randn" and use_sklearn and has_sklearn_datasets:
+    if isinstance(dictionary, str) and dictionary == "randn" and use_sklearn and has_sklearn_datasets:
         # use random normalized dictionary from scikit-learn
         data, dictionary, gamma = sklearn.datasets.make_sparse_coded_signal(n_samples=num_data, n_features=signal_size,
                                                                 n_components=dict_size ,n_nonzero_coefs=sparsity,
@@ -72,11 +91,11 @@ def make_sparse_coded_signal(signal_size, dict_size, sparsity, num_data, snr_db,
 
     else:
         # Create dictionary
-        if dictionary == "randn":
+        if isinstance(dictionary, str) and dictionary == "randn":
             # generate random dictionary and normalize
             dictionary = rng.randn(signal_size, dict_size)
             dictionary = dictionary / numpy.sqrt(numpy.sum(dictionary**2, axis=0))
-        elif dictionary == "orthonormal":
+        elif isinstance(dictionary, str) and dictionary == "orthonormal":
             if signal_size != dict_size:
                 raise ValueError("Orthonormal dictionary has n==N")
             # generate random square dictionary and orthonormalize
@@ -99,25 +118,31 @@ def make_sparse_coded_signal(signal_size, dict_size, sparsity, num_data, snr_db,
         # Generate data
         data = numpy.dot(dictionary,gamma)
 
-    # Add noise
-    if numpy.isfinite(snr_db):
-        noise = rng.randn(signal_size, num_data)
-        SNR_norm = 10**(snr_db/20.)
-        for i in range(num_data):
-            # Make norm 1
-            noise[:,i] = noise[:,i] / numpy.linalg.norm(noise[:,i])
-            # Make smaller than data by SNR_norm
-            noise[:,i] = noise[:,i] / SNR_norm * numpy.linalg.norm(data[:,i])
-            (numpy.linalg.norm(data[:,i])**2 / numpy.linalg.norm(noise[:,i]))
-    else:
-        noise = 0
-    cleardata = data.copy() # no noise data
-    data = data + noise
+    # Add sparsity noise (noise on the decomposition vector)
+    cleargamma = gamma.copy()  # sparse gamma with no noise
+    gamma = add_noise_snr(gamma, snr_db_sparse, rng)
+    data = numpy.dot(dictionary, gamma)
+
+    # Add signal noise
+    # if numpy.isfinite(snr_db_signal):
+    #     noise = rng.randn(signal_size, num_data)
+    #     SNR_norm = 10**(snr_db_signal/20.)
+    #     for i in range(num_data):
+    #         # Make norm 1
+    #         noise[:,i] = noise[:,i] / numpy.linalg.norm(noise[:,i])
+    #         # Make smaller than data by SNR_norm
+    #         noise[:,i] = noise[:,i] / SNR_norm * numpy.linalg.norm(data[:,i])
+    #         #(numpy.linalg.norm(data[:,i])**2 / numpy.linalg.norm(noise[:,i]))
+    # else:
+    #     noise = 0
+    cleardata = data.copy() # data with no signal noise
+    data = add_noise_snr(data, snr_db_signal, rng)
+    #data = data + noise
 
     return data,dictionary,gamma,support,cleardata
 
 
-def make_compressed_sensing_problem(num_measurements, signal_size, dict_size, sparsity, num_data, snr_db,
+def make_compressed_sensing_problem(num_measurements, signal_size, dict_size, sparsity, num_data, snr_db_sparse, snr_db_signal, snr_db_meas,
                                     dictionary="randn", acquisition="randn", use_sklearn=True, random_state=None):
     """
     Generate a random compressed sensing problem.
@@ -134,8 +159,12 @@ def make_compressed_sensing_problem(num_measurements, signal_size, dict_size, sp
         Desired sparsity of the signal.
     num_data : int
         Number of signals to generate.
-    snr_db : float
-        Signal to Noise Ratio (dB). Can be numpy.inf for no noise.
+    snr_db_sparse : float
+        Signal to Noise Ratio (dB) of the sparse decomposition. Can be numpy.inf for no noise.
+    snr_db_signal : float
+        Signal to Noise Ratio (dB) of the signal (dict * decomposition). Can be numpy.inf for no noise.
+    snr_db_meas: float
+        Signal to Noise Ratio (dB) of the measurements. Can be numpy.inf for no noise.
     dictionary : {'randn', 'orthonormal', a numpy matrix}, optional (default="randn")
          The type of dictionary. Can be one of the following:
         - "randn" (default): i.i.d. random gaussian entries, atoms (columns) are normalized
@@ -173,11 +202,11 @@ def make_compressed_sensing_problem(num_measurements, signal_size, dict_size, sp
     rng = check_random_state(random_state)
 
     # generate sparse coded data
-    data, dictionary, gamma, support, cleardata = make_sparse_coded_signal(signal_size, dict_size, sparsity ,num_data, snr_db,
+    data, dictionary, gamma, support, cleardata = make_sparse_coded_signal(signal_size, dict_size, sparsity ,num_data, snr_db_sparse, snr_db_sparse,
                                                                 dictionary, use_sklearn, random_state=rng)
 
     # generate acquisition matrix
-    if acquisition == "randn":
+    if isinstance(acquisition, str) and acquisition == "randn":
         acqumatrix = rng.randn(num_measurements, signal_size)
     elif isinstance(acquisition, numpy.ndarray):
         # acquisition matrix is given
@@ -188,6 +217,9 @@ def make_compressed_sensing_problem(num_measurements, signal_size, dict_size, sp
         raise ValueError("Unrecognized acquisition matrix type")
 
     measurements = numpy.dot(acqumatrix, data)
+
+    # Add measurement noise
+    measurements = add_noise_snr(measurements, snr_db_meas, rng)
 
     return measurements, acqumatrix, data, dictionary, gamma, support, cleardata
 
