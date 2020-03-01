@@ -213,6 +213,8 @@ def make_compressed_sensing_problem(num_measurements, signal_size, dict_size, sp
         if num_measurements != acquisition.shape[0] or signal_size != acquisition.shape[1]:
             raise ValueError("Acquisition matrix shape different from (m,n)")
         acqumatrix = acquisition
+    elif callable(acquisition):
+        acqumatrix = acquisition(num_measurements, signal_size)
     else:
         raise ValueError("Unrecognized acquisition matrix type")
 
