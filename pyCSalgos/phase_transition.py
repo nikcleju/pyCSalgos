@@ -27,14 +27,16 @@ from . import generate as gen
 
 
 class PhaseTransition(with_metaclass(ABCMeta, object)):
-    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers=[]):
+    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, snr_db_sparse, snr_db_signal, snr_db_meas, solvers=[]):
 
         self.signaldim = signaldim
         self.dictdim = dictdim
         self.numdata = numdata
         self.deltas = deltas
         self.rhos = rhos
-        self.snr_db = snr_db
+        self.snr_db_sparse = snr_db_sparse
+        self.snr_db_signal = snr_db_signal
+        self.snr_db_meas   = snr_db_meas
 
         self.err = None
         self.ERCsuccess = None
@@ -100,7 +102,9 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         + "Number of signals for each data point = " + str(self.numdata) + "\n"
         + "Delta = " + str(self.deltas) + "\n"
         + "Rho   = " + str(self.rhos) + "\n"
-        + "SNR = " + str(self.snr_db) + " dB\n"
+        + "SNR_Sparse = " + str(self.snr_db_sparse) + " dB\n"
+        + "SNR_Signal = " + str(self.snr_db_signal) + " dB\n"
+        + "SNR_Meas = " + str(self.snr_db_meas) + " dB\n"
         + "Solvers = " + str(self.solvers) + "\n"
         + "Solvers with Exact Recovery Condition (ERC) = " + str(self.ERCsolvers) + "\n"
         + "Error matrix = " + errstr + "\n"
@@ -250,13 +254,16 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
 
         # dictionary to save
         mdict = {u'signaldim': self.signaldim, u'dictdim': self.dictdim, u'numdata': self.numdata,
-                 u'deltas': self.deltas, u'rhos': self.rhos, u'snr_db': self.snr_db,
+                 u'deltas': self.deltas, u'rhos': self.rhos, 
+                 u'snr_db_sparse': self.snr_db_sparse, u'snr_db_signal': self.snr_db_signal, u'snr_db_meas': self.snr_db_meas,
                  u'solverNames': self.solverNames, u'ERCsolverNames': self.ERCsolverNames,
                  u'err': self.err, u'ERCsuccess': self.ERCsuccess, u'simData': self.simData,
                  u'description': self.get_description()}
 
         hdf5storage.savemat(basename + '.mat', mdict)
-        with open(basename+".pickle", "w") as f:
+        with open(basename+"_data.pickle", "wb") as f:
+            cPickle.dump(mdict, f)
+        with open(basename+".pickle", "wb") as f:
             cPickle.dump(self.solvers, f)
             cPickle.dump(self.ERCsolvers, f)
         with open(basename+".txt", "w") as f:
@@ -294,6 +301,11 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
             self.numdata = mdict[u'numdata']
             self.deltas = mdict[u'deltas'].copy()
             self.rhos = mdict[u'rhos'].copy()
+            self.snr_db_sparse = mdict[u'snr_db_sparse']
+            self.snr_db_signal = mdict[u'snr_db_signal']
+            self.snr_db_meas   = mdict[u'snr_db_meas']
+            self.solverNames = mdict[u'solverNames'].copy()
+            self.ERCsolverNames = mdict[u'ERCsolverNames'].copy()
             if mdict[u'err'] is not None:
                 self.err = mdict[u'err'].copy()
             if mdict[u'ERCsuccess'] is not None:
@@ -317,7 +329,7 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         Load complete PhaseTransition object dumped with pickle.dump()
         :return: The loaded object
         """
-        with open(filename, "r") as f:
+        with open(filename, "rb") as f:
             obj = cPickle.load(f)
         return obj
 
@@ -381,8 +393,8 @@ class SynthesisPhaseTransition(PhaseTransition):
     Class for running and plotting synthesis-based phase transitions
     """
 
-    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers=[], dictionary="randn", acqumatrix="randn"):
-        super(SynthesisPhaseTransition, self).__init__(signaldim, dictdim, deltas, rhos, numdata, snr_db, solvers)
+    def __init__(self, signaldim, dictdim, deltas, rhos, numdata, snr_db_sparse, snr_db_signal, snr_db_meas, solvers=[], dictionary="randn", acqumatrix="randn"):
+        super(SynthesisPhaseTransition, self).__init__(signaldim, dictdim, deltas, rhos, numdata, snr_db_sparse, snr_db_signal, snr_db_meas, solvers)
         self.dictionary=dictionary
         self.acqumatrix=acqumatrix
 
@@ -418,7 +430,7 @@ class SynthesisPhaseTransition(PhaseTransition):
                 if not self.simData[idelta][irho]:
                     measurements, acqumatrix, realdata, dictionary, realgamma, realsupport, cleardata = \
                         gen.make_compressed_sensing_problem(
-                            m, self.signaldim, self.dictdim, k, self.numdata, self.snr_db, self.dictionary, self.acqumatrix, random_state=random_state)
+                            m, self.signaldim, self.dictdim, k, self.numdata, self.snr_db_sparse, self.snr_db_signal, self.snr_db_meas, self.dictionary, self.acqumatrix, random_state=random_state)
                     self.simData[idelta][irho][u'measurements'] = measurements
                     self.simData[idelta][irho][u'acqumatrix'] = acqumatrix
                     self.simData[idelta][irho][u'realdata'] = realdata
@@ -654,6 +666,7 @@ class AnalysisPhaseTransition(PhaseTransition):
             print("Elapsed: " + str((time_end - time_start).seconds) + " seconds")
 
 
+
 # this can be avoided in python 3.3
 def tuplewrap_make_analysis_compressed_sensing_problem(tuple_data):
     return gen.make_analysis_compressed_sensing_problem(*tuple_data)
@@ -723,3 +736,100 @@ def plot_phase_transition(matrix, transpose=True, reverse_colormap=False, xvals=
         plt.xticks(xvals)
     if yvals:
         plt.yticks(yvals)
+
+
+#====================================================
+
+class SparseCodingMixin:
+
+    def __init__(self, *args):
+        self.err = None
+        self.deltas = None
+        self.rhos = None
+        self.solverNames = None
+        super().__init__(*args)  # mixin calls super too
+
+
+    def plot(self, thresh=None, basename=None, saveexts=[], showtitle=False, legend=[], rhomax=1):
+
+        markers = ['o','x','^','v','+']
+
+        if basename is None:
+            strdatetime = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")
+            basename = 'plot_lines_' + strdatetime
+
+        datasources = []
+        reverse_colormap = []
+
+
+        if self.err is None:
+            ValueError("No data to plot (have you run()?)")
+        else:
+            datasources.append(self._compute_average(self.err, thresh))
+            if thresh is None:
+                reverse_colormap.append(True)
+            else:
+                reverse_colormap.append(False)
+
+        for data in datasources:
+
+            fig = plt.figure()
+
+            # Set styles
+            # Use default colors, set markers
+            plt.gca().set_prop_cycle(color=['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan'],
+                                    #marker=['.','x', '+', 's','D','^','V', '<', '>'])
+                                    marker=['o','^','v', '<', '>', 's', 'D', '*', 'X', 'P'])
+            
+            # Find index of first rho value larger than rhomax, or len(self.rhos) if no value is larger (i.e. keep all rhos)
+            # Will plot data only up to irho_limit on the x axis
+            irho_limit = next((idx for idx, value in enumerate(self.rhos) if value > rhomax), len(self.rhos)) 
+
+            plt.plot(self.rhos[:irho_limit], data[:,0,:irho_limit].T)   # data[algorithm, idelta, irho].Transposed => [irho, algo]
+
+            plt.xlabel(r"Relative sparsity $\rho$ = k / n")
+            if thresh is None:
+                plt.ylabel(r"Average recovery error")
+            else:
+                plt.ylabel(r"Fraction of successfully recovered signals")
+
+            if showtitle:
+                if thresh is None:
+                    plt.title('Average recovery error depending on sparsity level')
+                else:
+                    plt.title('Fraction of successfully recovered signals depending on sparsity level')
+            
+            if legend:
+                plt.legend(legend)
+
+            for ext in saveexts:
+                if ext != 'pickle':
+                    plt.savefig(basename + '.' + ext, bbox_inches='tight')
+                else:
+                    cPickle.dump(fig, open(basename + '.pickle','wb'))
+
+            plt.close()
+
+
+class SynthesisSparseCoding(SparseCodingMixin, SynthesisPhaseTransition):
+    def __init__(self, signaldim=None, dictdim=None, rhos=[], ks=None, numdata=1, snr_db_sparse=np.Inf, snr_db_signal=np.Inf, solvers=[], dictionary="randn"):
+
+        if signaldim == None:
+            signaldim = dictionary.shape[0]
+        if dictdim == None:
+            dictdim = dictionary.shape[1]
+        if rhos == []:
+            rhos = [k / signaldim for k in ks] 
+        deltas = [signaldim / dictdim]
+
+        # Phase Transition maps to Sparse Coding:
+        #  measurement matrix = dictionary
+        #  dictionary = unit matrix
+        #  measurements = the signal
+        #  the signal = the sparse decomposition
+        #  the sparse decomposition = the sparse decomposition (dictionary = unit matrix so signal = decomposition)
+        #  measurement noise = signal noise
+        #  signal noise = decompostion noise
+        #  decomposition noise = another decompostion noise
+
+        super().__init__(dictdim, dictdim, deltas, rhos, numdata, np.Inf, snr_db_sparse, snr_db_signal, solvers, np.eye(dictdim), dictionary) # dictionary is eye(), acqumatrix is dictionary

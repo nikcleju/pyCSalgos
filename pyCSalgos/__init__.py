@@ -21,6 +21,7 @@ from .uap import UnconstrainedAnalysisPursuit
 
 from .phase_transition import SynthesisPhaseTransition
 from .phase_transition import AnalysisPhaseTransition
+from .phase_transition import SynthesisSparseCoding
 
 
 __all__ = ['make_sparse_coded_signal',
@@ -38,4 +39,5 @@ __all__ = ['make_sparse_coded_signal',
            'AnalysisBySynthesis',
            'UnconstrainedAnalysisPursuit',
            'SynthesisPhaseTransition',
-           'AnalysisPhaseTransition']
+           'AnalysisPhaseTransition',
+           'SynthesisSparseCoding']
