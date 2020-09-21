@@ -164,7 +164,7 @@ def make_compressed_sensing_problem(num_measurements, signal_size, dict_size, sp
     snr_db_signal : float
         Signal to Noise Ratio (dB) of the signal (dict * decomposition). Can be numpy.inf for no noise.
     snr_db_meas: float
-        Signal to Noise Ratio (dB) of the measurements. Can be numpy.inf for no noise.
+        Signal to Noise Ratio (dB) of the measurements (acquisition * dict * decomposition). Can be numpy.inf for no noise.
     dictionary : {'randn', 'orthonormal', a numpy matrix}, optional (default="randn")
          The type of dictionary. Can be one of the following:
         - "randn" (default): i.i.d. random gaussian entries, atoms (columns) are normalized
@@ -202,7 +202,7 @@ def make_compressed_sensing_problem(num_measurements, signal_size, dict_size, sp
     rng = check_random_state(random_state)
 
     # generate sparse coded data
-    data, dictionary, gamma, support, cleardata = make_sparse_coded_signal(signal_size, dict_size, sparsity ,num_data, snr_db_sparse, snr_db_sparse,
+    data, dictionary, gamma, support, cleardata = make_sparse_coded_signal(signal_size, dict_size, sparsity ,num_data, snr_db_sparse, snr_db_signal,
                                                                 dictionary, use_sklearn, random_state=rng)
 
     # generate acquisition matrix
