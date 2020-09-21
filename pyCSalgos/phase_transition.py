@@ -40,7 +40,8 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
 
         self.err = None
         self.ERCsuccess = None
-        self.ERCsuccess = None
+        self.gamma = None
+        self.support = None
         self.simData = []
 
         self.solvers = solvers
@@ -59,6 +60,8 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
     def clear(self):
         self.err = None
         self.ERCsuccess = None
+        self.gamma = None
+        self.support = None        
         self.simData = []
 
     def set_solvers(self, solvers):
@@ -92,6 +95,11 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         else:
             ERCstr = "shape " + str(self.ERCsuccess.shape)
 
+        if self.gamma is None:
+            gammastr = "None"
+        else:
+            gammastr = "shape " + str(self.gamma.shape)
+
         return ("Date and time: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f") + "\n"
         + "Description of phase transition object:\n"
         + str(self) + "\n"
@@ -108,7 +116,8 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         + "Solvers = " + str(self.solvers) + "\n"
         + "Solvers with Exact Recovery Condition (ERC) = " + str(self.ERCsolvers) + "\n"
         + "Error matrix = " + errstr + "\n"
-        + "ERC success matrix = """ + ERCstr + "\n")
+        + "ERC success matrix = """ + ERCstr + "\n"
+        + "Gamma matrix = " + gammastr + "\n")
 
     def plot(self, subplot=True, solve=True, check=False, thresh=None, show=True, basename=None, saveexts=[], showtitle=False):
         # plt.ion() # Turn interactive off
@@ -257,7 +266,7 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
                  u'deltas': self.deltas, u'rhos': self.rhos, 
                  u'snr_db_sparse': self.snr_db_sparse, u'snr_db_signal': self.snr_db_signal, u'snr_db_meas': self.snr_db_meas,
                  u'solverNames': self.solverNames, u'ERCsolverNames': self.ERCsolverNames,
-                 u'err': self.err, u'ERCsuccess': self.ERCsuccess, u'simData': self.simData,
+                 u'err': self.err, u'ERCsuccess': self.ERCsuccess, u'gamma': self.gamma, u'support': self.support, u'simData': self.simData,
                  u'description': self.get_description()}
 
         hdf5storage.savemat(basename + '.mat', mdict)
@@ -280,7 +289,7 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         with open(basename+".txt", "w") as f:
             f.write(self.get_description())
 
-    def loaddata(self, matfilename=None, picklefilename=None):
+    def loaddata(self, matfilename=None, picklefilename1=None, picklefilename2=None):
         """
         Loads data from saved files. If matfilename is not None, all numerical data is read from ithe file (but not
          the solver objects). If picklefilename is not None, solver objects are read from the file.
@@ -289,13 +298,17 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         :return:
         """
 
-        if picklefilename is not None:
-            with open(picklefilename, "r") as f:
+        if picklefilename1 is not None:
+            with open(picklefilename1, "rb") as f:
                 solvers = cPickle.load(f)
                 self.set_solvers(solvers)
-
-        if matfilename is not None:
-            mdict = hdf5storage.loadmat(matfilename)
+        if matfilename is not None or picklefilename2 is not None:
+            if picklefilename2 is not None:
+                with open(picklefilename2, "rb") as f:
+                    mdict = cPickle.load(f)
+            if matfilename is not None:
+                mdict = hdf5storage.loadmat(matfilename)
+        
             self.signaldim = mdict[u'signaldim']
             self.dictdim = mdict[u'dictdim']
             self.numdata = mdict[u'numdata']
@@ -310,6 +323,10 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
                 self.err = mdict[u'err'].copy()
             if mdict[u'ERCsuccess'] is not None:
                 self.ERCsuccess = mdict[u'ERCsuccess'].copy()
+            if mdict[u'gamma'] is not None:
+                self.gamma = mdict[u'gamma'].copy()
+            if mdict[u'support'] is not None:
+                self.support = mdict[u'support'].copy()   # This is a list
             if u'simData' in mdict.keys():
                 self.simData = mdict[u'simData']
 
@@ -411,7 +428,11 @@ class SynthesisPhaseTransition(PhaseTransition):
         # Initialize zero-filled arrays
         if solve is True:
             #self.err = [np.zeros(shape=(len(self.deltas), len(self.rhos), self.numdata)) for _ in self.solvers]
-            self.err = np.zeros(shape=(len(self.solvers), len(self.deltas), len(self.rhos), self.numdata))
+            self.err   = np.zeros(shape=(len(self.solvers), len(self.deltas), len(self.rhos), self.numdata))
+            self.gamma = np.zeros(shape=(len(self.solvers), len(self.deltas), len(self.rhos), self.dictionary.shape[1], self.numdata))
+            self.support = [[[[] for r in self.rhos] for d in self.deltas] for s in self.solvers]
+            
+
         if check is True:
             #self.ERCsuccess = [np.zeros(shape=(len(self.deltas), len(self.rhos), self.numdata), dtype=bool)
             #                   for _ in self.ERCsolvers]
@@ -472,10 +493,22 @@ class SynthesisPhaseTransition(PhaseTransition):
             for idelta in range(len(self.deltas)):
                 for irho in range(len(self.rhos)):
                     result = next(result_iter)
+
+                    # Unpack results
+                    res_err        = result[0]
+                    res_ERCsuccess = result[1]
+                    res_gamma      = result[2]
+                    res_supp       = result[3]
+
                     if solve is True:
-                        self.err[:,idelta,irho,:] = result[0]
+                        self.err[:,idelta,irho,:] = res_err
+                        self.gamma[:,idelta,irho, :, :] = res_gamma
+                        for isolver, res_supp_solver in enumerate(res_supp):
+                            self.support[isolver][idelta][irho]  = res_supp_solver
+
                     if check is True:
-                        self.ERCsuccess[:,idelta,irho,:] = result[1]
+                        self.ERCsuccess[:,idelta,irho,:] = res_ERCsuccess
+
 
 
 def run_synthesis_delta_rho(tuple_data):
@@ -499,6 +532,8 @@ def run_synthesis_delta_rho(tuple_data):
     num_data = measurements.shape[1]
     ERCsuccess = np.zeros(shape=(len(ERCsolvers), num_data), dtype=bool)
     err = np.zeros(shape=(len(solvers), num_data))
+    gammaout = np.zeros(shape=(len(solvers), dictionary.shape[1], num_data))
+    suppout = []  # pass a list not an array the support of each signal may have different lengths
 
     if check is True:
         for iERCsolver, ERCsolver in enumerate(ERCsolvers):
@@ -506,14 +541,33 @@ def run_synthesis_delta_rho(tuple_data):
             ERCsuccess[iERCsolver] = ERCsolver.checkERC(acqumatrix, dictionary, realsupport)
     if solve is True:
         for isolver, solver in enumerate(solvers):
-            gamma = solver.solve(measurements, np.dot(acqumatrix, dictionary), realdict)
+            result = solver.solve(measurements, np.dot(acqumatrix, dictionary), realdict)
+            
+            # Support solvers which return a tuple (gamma, support list) as well as the older ones which return only gamma
+            if isinstance(result, tuple):
+                gamma = result[0]
+                supp = result[1]
+            else:
+                gamma = result
+                # Attempt to discover support based on non-zero coefficients in solution
+                supp = []
+                for isig in range(gamma.shape[1]):
+                    supp.append(np.array(np.nonzero(gamma[:,isig])[0]))
+           
+            # Compute and save relative error
             data = np.dot(dictionary, gamma)
             errors = data - realdata
             for i in range(errors.shape[1]):
                 errors[:, i] = errors[:, i] / np.linalg.norm(realdata[:, i])
                 err[isolver][i] = np.sqrt(sum(errors[:, i] ** 2))
 
-    return err, ERCsuccess
+            # Save gamma for output
+            gammaout[isolver] = gamma
+
+            # Save support for output
+            suppout.append(supp)
+
+    return err, ERCsuccess, gammaout, suppout
 
 
 # TODO: maybe needs refactoring, it's very similar to PhaseTransition()
@@ -750,7 +804,8 @@ class SparseCodingMixin:
         super().__init__(*args)  # mixin calls super too
 
 
-    def plot(self, thresh=None, basename=None, saveexts=[], showtitle=False, legend=[], rhomax=1):
+    def plot(self, thresh=None, basename=None, saveexts=[], showtitle=False, legend=[], rhomax=1, plot_options={}, 
+                xlim=(None, None), ylim=(None, None)):
 
         markers = ['o','x','^','v','+']
 
@@ -775,17 +830,36 @@ class SparseCodingMixin:
 
             fig = plt.figure()
 
+            if plot_options:
+                color_list       = [plot_options[algo]['color'] for algo in legend]
+                marker_list      = [plot_options[algo]['marker'] for algo in legend]
+                linestyle_list   = [plot_options[algo]['linestyle'] for algo in legend]
+
+            else:
+                # Use default colors, set markers
+                color_list     = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
+                #marker_list=['.','x', '+', 's','D','^','V', '<', '>'])                
+                marker_list    = ['o','^','v', '<', '>', 's', 'D', '*', 'X', 'P']
+                linestyle_list = ['-']*len(color_list)
+
             # Set styles
-            # Use default colors, set markers
-            plt.gca().set_prop_cycle(color=['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan'],
-                                    #marker=['.','x', '+', 's','D','^','V', '<', '>'])
-                                    marker=['o','^','v', '<', '>', 's', 'D', '*', 'X', 'P'])
+            plt.gca().set_prop_cycle(color=color_list,
+                                     marker=marker_list,
+                                     linestyle=linestyle_list)
             
             # Find index of first rho value larger than rhomax, or len(self.rhos) if no value is larger (i.e. keep all rhos)
             # Will plot data only up to irho_limit on the x axis
             irho_limit = next((idx for idx, value in enumerate(self.rhos) if value > rhomax), len(self.rhos)) 
 
             plt.plot(self.rhos[:irho_limit], data[:,0,:irho_limit].T)   # data[algorithm, idelta, irho].Transposed => [irho, algo]
+
+            # Set axis limits
+            x1, x2 = xlim
+            y1, y2 = ylim
+            if x1 is not None: plt.xlim(left=x1)
+            if x2 is not None: plt.xlim(right=x1)
+            if y1 is not None: plt.ylim(bottom=y1)
+            if y2 is not None: plt.ylim(top=y2)
 
             plt.xlabel(r"Relative sparsity $\rho$ = k / n")
             if thresh is None:
@@ -810,6 +884,61 @@ class SparseCodingMixin:
 
             plt.close()
 
+    
+    def plot_suppport_recovered(self, basename=None, saveexts=[], showtitle=False, legend=[], rhomax=1):
+
+        markers = ['o','x','^','v','+']
+
+        if basename is None:
+            strdatetime = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")
+            basename = 'plot_lines_' + strdatetime
+
+        if self.support is None:
+            ValueError("No support information available")
+
+        # Compute percent of recovered support
+        percent_good_support = np.zeros(shape=(len(self.solvers), len(self.deltas), len(self.rhos), self.numdata))
+        for idelta, _ in enumerate(self.deltas):
+            for irho, _ in enumerate(self.rhos):
+                realsupp = self.simData[idelta][irho][u'realsupport']
+                for isolver,_ in enumerate(self.solvers):
+                    for isig, recsupp in enumerate(self.support[isolver][idelta][irho]):     # support for each signal
+                        percent_good_support[isolver, idelta, irho, isig] = len(set(realsupp[:,isig]) & set(recsupp)) / len(realsupp[:,isig])
+
+        datasources = [percent_good_support.mean(axis=3)]   # Average over last axis (signals)
+
+        for data in datasources:
+
+            fig = plt.figure()
+
+            # Set styles
+            # Use default colors, set markers
+            plt.gca().set_prop_cycle(color=['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan'],
+                                    #marker=['.','x', '+', 's','D','^','V', '<', '>'])
+                                    marker=['o','^','v', '<', '>', 's', 'D', '*', 'X', 'P'])
+            
+            # Find index of first rho value larger than rhomax, or len(self.rhos) if no value is larger (i.e. keep all rhos)
+            # Will plot data only up to irho_limit on the x axis
+            irho_limit = next((idx for idx, value in enumerate(self.rhos) if value > rhomax), len(self.rhos)) 
+
+            plt.plot(self.rhos[:irho_limit], data[:,0,:irho_limit].T)   # data[algorithm, idelta, irho].Transposed => [irho, algo]
+
+            plt.xlabel(r"Relative sparsity $\rho$ = k / n")
+            plt.ylabel(r"Fraction of successfully recovered support")
+
+            if showtitle:
+                plt.title('Fraction of successfully recovered support depending on sparsity level')
+            
+            if legend:
+                plt.legend(legend)
+
+            for ext in saveexts:
+                if ext != 'pickle':
+                    plt.savefig(basename + '.' + ext, bbox_inches='tight')
+                else:
+                    cPickle.dump(fig, open(basename + '.pickle','wb'))
+
+            plt.close()
 
 class SynthesisSparseCoding(SparseCodingMixin, SynthesisPhaseTransition):
     def __init__(self, signaldim=None, dictdim=None, rhos=[], ks=None, numdata=1, snr_db_sparse=np.Inf, snr_db_signal=np.Inf, solvers=[], dictionary="randn"):
