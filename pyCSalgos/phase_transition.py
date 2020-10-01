@@ -241,17 +241,26 @@ class PhaseTransition(with_metaclass(ABCMeta, object)):
         if show:
             plt.show()
 
-    def _compute_average(self, data, thresh):
+    def _compute_average(self, data, thresh, ignorenan=True):
         """
         Computes average
         :param data:
         :param thresh:
         :return:
         """
+
+        # Choose how to do average
+        # If nan is present and ignorenan is True, print warning and use np.nanmean() to ignore them
+        meanfunc = np.mean          # default is np.mean()
+        if ignorenan and np.any(np.isnan(data)):
+            import warnings
+            warnings.warn('_compute_average(): nan detected, results may be affected!')
+            meanfunc = np.nanmean
+
         if thresh is None:
-            return np.mean(data, 3)
+            return meanfunc(data, 3)  # Ignore nan values
         else:
-            return np.mean(np.abs(data) < thresh, 3)
+            return meanfunc(np.abs(data) < thresh, 3)
 
     def savedata(self, basename=None):
         """
@@ -485,7 +494,7 @@ class SynthesisPhaseTransition(PhaseTransition):
                 pool = multiprocessing.Pool(processes=processes)
                 results = pool.map(run_synthesis_delta_rho, task_parameters)
             else:
-                results = map(run_synthesis_delta_rho, task_parameters)
+                results = map(run_synthesis_delta_rho, enumerate(task_parameters))
 
 
             # Process results
@@ -511,7 +520,9 @@ class SynthesisPhaseTransition(PhaseTransition):
 
 
 
-def run_synthesis_delta_rho(tuple_data):
+def run_synthesis_delta_rho(enum_tuple_data):
+
+    (index, tuple_data) = enum_tuple_data
 
     # Unpack tuple
     solvers = tuple_data[0]
@@ -531,7 +542,8 @@ def run_synthesis_delta_rho(tuple_data):
     # Prepare results
     num_data = measurements.shape[1]
     ERCsuccess = np.zeros(shape=(len(ERCsolvers), num_data), dtype=bool)
-    err = np.zeros(shape=(len(solvers), num_data))
+    err = np.empty(shape=(len(solvers), num_data))
+    err[:] = np.nan  # Create an array full of NaN, not if zeros. Then they are ignored with nanmean()
     gammaout = np.zeros(shape=(len(solvers), dictionary.shape[1], num_data))
     suppout = []  # pass a list not an array the support of each signal may have different lengths
 
@@ -541,6 +553,8 @@ def run_synthesis_delta_rho(tuple_data):
             ERCsuccess[iERCsolver] = ERCsolver.checkERC(acqumatrix, dictionary, realsupport)
     if solve is True:
         for isolver, solver in enumerate(solvers):
+            print('{} --- --- Data point number {}, solver {}'.format(datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S:%f"), index, str(solver)))
+
             result = solver.solve(measurements, np.dot(acqumatrix, dictionary), realdict)
             
             # Support solvers which return a tuple (gamma, support list) as well as the older ones which return only gamma
@@ -556,13 +570,20 @@ def run_synthesis_delta_rho(tuple_data):
            
             # Compute and save relative error
             data = np.dot(dictionary, gamma)
-            errors = data - realdata
+
+            # Data may be smaller if solver is restricted in number of signals (for making it faster)
+            #errors = data - realdata
+            real_num_data = data.shape[1]
+            errors = data - realdata[:, :real_num_data]
             for i in range(errors.shape[1]):
                 errors[:, i] = errors[:, i] / np.linalg.norm(realdata[:, i])
                 err[isolver][i] = np.sqrt(sum(errors[:, i] ** 2))
 
             # Save gamma for output
-            gammaout[isolver] = gamma
+            # Data may be smaller if solver is restricted in number of signals (for making it faster)
+            #gammaout[isolver] = gamma
+            gammaout[isolver][:,:gamma.shape[1]] = gamma
+            gammaout[isolver][:,gamma.shape[1]:] = None
 
             # Save support for output
             suppout.append(supp)
